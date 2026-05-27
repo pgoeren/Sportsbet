@@ -6,7 +6,7 @@ import { EdgeScoreCard } from "./EdgeScoreCard"
 import { format } from "date-fns"
 import { ChevronDown, ChevronUp, TrendingUp, Users, AlertCircle } from "lucide-react"
 import { EdgeResult, InjuryReport, AnalystPick } from "@/lib/edge-model"
-import { OddsJamOdd } from "@/lib/oddsjam"
+import { GameOdd } from "@/lib/odds-api"
 
 interface GameData {
   id: string
@@ -15,7 +15,7 @@ interface GameData {
   home_team: string
   away_team: string
   start_date: string
-  odds: OddsJamOdd[]
+  odds: GameOdd[]
   homeEdge: EdgeResult
   awayEdge: EdgeResult
   topPick: EdgeResult & { team: string }
