@@ -4,9 +4,22 @@ import { formatOdds, getEdgeColor } from "@/lib/utils"
 import { Badge } from "./ui/badge"
 import { EdgeScoreCard } from "./EdgeScoreCard"
 import { format } from "date-fns"
-import { ChevronDown, ChevronUp, TrendingUp, Users, AlertCircle } from "lucide-react"
-import { EdgeResult, InjuryReport, AnalystPick } from "@/lib/edge-model"
+import { ChevronDown, ChevronUp, TrendingUp, BarChart2, AlertCircle, Info } from "lucide-react"
+import { EdgeResult, InjuryReport } from "@/lib/edge-model"
 import { GameOdd } from "@/lib/odds-api"
+
+interface MarketConsensusEntry {
+  source: string
+  pick: string
+  impliedProb: number
+}
+
+interface GameSources {
+  odds: string
+  injuries: string
+  consensus: string
+  stats: string
+}
 
 interface GameData {
   id: string
@@ -20,7 +33,8 @@ interface GameData {
   awayEdge: EdgeResult
   topPick: EdgeResult & { team: string }
   injuries: InjuryReport[]
-  analystPicks: AnalystPick[]
+  marketConsensus: MarketConsensusEntry[]
+  sources: GameSources
 }
 
 interface GameCardProps {
@@ -221,24 +235,37 @@ export function GameCard({ game, onBet }: GameCardProps) {
             </div>
           )}
 
-          {/* Analyst picks */}
-          {game.analystPicks?.length > 0 && (
+          {/* Market consensus */}
+          {game.marketConsensus?.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-gray-400 flex items-center gap-1">
-                <Users className="w-3 h-3" /> ANALYST CONSENSUS
-              </h4>
-              {game.analystPicks.map((pick, i) => (
+              <div className="flex items-center gap-1">
+                <h4 className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+                  <BarChart2 className="w-3 h-3" /> MARKET CONSENSUS
+                </h4>
+                <span className="text-xs text-gray-600">(implied probability)</span>
+              </div>
+              {game.marketConsensus.map((entry, i) => (
                 <div key={i} className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">{pick.analyst}</span>
+                  <span className="text-gray-400">{entry.source}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-white font-medium">{pick.pick}</span>
-                    <Badge
-                      variant={pick.confidence as "low" | "medium" | "high"}
-                      className="text-xs"
-                    >
-                      {pick.confidence}
-                    </Badge>
+                    <span className="text-white font-medium">{entry.pick}</span>
+                    <span className="text-gray-500">{Math.round(entry.impliedProb * 100)}%</span>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Sources */}
+          {game.sources && (
+            <div className="rounded-lg bg-white/5 p-3 space-y-1.5 border border-white/5">
+              <h4 className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+                <Info className="w-3 h-3" /> DATA SOURCES
+              </h4>
+              {Object.entries(game.sources).map(([key, value]) => (
+                <div key={key} className="flex items-start justify-between text-xs gap-2">
+                  <span className="text-gray-500 capitalize flex-shrink-0">{key}</span>
+                  <span className="text-gray-300 text-right">{value}</span>
                 </div>
               ))}
             </div>

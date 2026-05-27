@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { TrendingUp, Zap, Target, RefreshCw } from "lucide-react"
 import { GameCard } from "@/components/GameCard"
 import { BetModal } from "@/components/BetModal"
+import { PerformanceWidget } from "@/components/PerformanceWidget"
 
 interface GameData {
   id: string
@@ -62,11 +63,17 @@ interface GameData {
     status: "out" | "doubtful" | "questionable" | "probable"
     impact: number
   }>
-  analystPicks: Array<{
-    analyst: string
+  marketConsensus: Array<{
+    source: string
     pick: string
-    confidence: "low" | "medium" | "high"
+    impliedProb: number
   }>
+  sources: {
+    odds: string
+    injuries: string
+    consensus: string
+    stats: string
+  }
 }
 
 interface BetPayload {
@@ -146,6 +153,9 @@ export default function HomePage() {
       </div>
 
       <div className="px-4 pt-4 space-y-6">
+        {/* Yesterday's performance */}
+        <PerformanceWidget />
+
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-center">
