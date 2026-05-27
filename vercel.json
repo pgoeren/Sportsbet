@@ -2,9 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install --legacy-peer-deps",
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "ODDSJAM_API_KEY": "@oddsjam_api_key"
-  }
+  "installCommand": "npm install --legacy-peer-deps"
 }

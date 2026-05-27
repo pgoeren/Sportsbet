@@ -32,10 +32,10 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/bets")
-      .then((r) => r.json())
-      .then((d) => setBets(d.bets ?? []))
-      .finally(() => setLoading(false))
+    import("@/lib/bets-store").then(({ getBets }) => {
+      setBets(getBets())
+      setLoading(false)
+    })
   }, [])
 
   const settled = bets.filter((b) => b.status !== "pending")

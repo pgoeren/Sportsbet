@@ -71,12 +71,9 @@ export default function PicksPage() {
     setSelectedOdds(odds)
   }
 
-  const handleSubmitBet = async (bet: BetPayload) => {
-    await fetch("/api/bets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bet),
-    })
+  const handleSubmitBet = (bet: BetPayload) => {
+    const { saveBet } = require("@/lib/bets-store")
+    saveBet(bet)
   }
 
   const PickSection = ({
