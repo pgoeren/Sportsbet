@@ -35,7 +35,8 @@ export interface GameOdd {
 export async function fetchUpcomingGames(sport?: string): Promise<Game[]> {
   if (!API_KEY) {
     console.warn("THE_ODDS_API_KEY not set — using demo data")
-    return getMockGames()
+    const now = Date.now()
+    return getMockGames().filter(g => new Date(g.start_date).getTime() > now)
   }
 
   const sportKeys = sport
@@ -65,8 +66,11 @@ async function fetchOddsForSport(sportKey: string): Promise<Game[]> {
   })
 
   const meta = SPORT_MAP[sportKey]
+  const now = Date.now()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (res.data ?? []).map((g: any) => normalizeGame(g, meta))
+  return (res.data ?? [])
+    .filter((g: any) => new Date(g.commence_time).getTime() > now)
+    .map((g: any) => normalizeGame(g, meta))
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
