@@ -4,13 +4,20 @@ const BASE_URL = "https://api.the-odds-api.com/v4"
 const API_KEY = process.env.THE_ODDS_API_KEY
 
 // The Odds API sport keys → our internal labels
-const SPORT_MAP: Record<string, { sport: string; league: string }> = {
-  basketball_nba:        { sport: "basketball", league: "NBA" },
-  americanfootball_nfl:  { sport: "football",   league: "NFL" },
-  baseball_mlb:          { sport: "baseball",   league: "MLB" },
-  icehockey_nhl:         { sport: "hockey",     league: "NHL" },
-  basketball_ncaab:      { sport: "basketball", league: "NCAAB" },
-  americanfootball_ncaaf:{ sport: "football",   league: "NCAAF" },
+const SPORT_MAP: Record<string, { sport: string; league: string; months: number[] }> = {
+  basketball_nba:         { sport: "basketball", league: "NBA",   months: [10,11,12,1,2,3,4,5,6] },
+  americanfootball_nfl:   { sport: "football",   league: "NFL",   months: [9,10,11,12,1,2] },
+  baseball_mlb:           { sport: "baseball",   league: "MLB",   months: [4,5,6,7,8,9,10] },
+  icehockey_nhl:          { sport: "hockey",     league: "NHL",   months: [10,11,12,1,2,3,4,5,6] },
+  basketball_ncaab:       { sport: "basketball", league: "NCAAB", months: [11,12,1,2,3,4] },
+  americanfootball_ncaaf: { sport: "football",   league: "NCAAF", months: [8,9,10,11,12,1] },
+}
+
+function activeSeasonKeys(): string[] {
+  const month = new Date().getMonth() + 1
+  return Object.entries(SPORT_MAP)
+    .filter(([, v]) => v.months.includes(month))
+    .map(([k]) => k)
 }
 
 // Our internal shared game format (same shape the UI already expects)
@@ -41,7 +48,7 @@ export async function fetchUpcomingGames(sport?: string): Promise<Game[]> {
 
   const sportKeys = sport
     ? Object.entries(SPORT_MAP).filter(([, v]) => v.sport === sport).map(([k]) => k)
-    : Object.keys(SPORT_MAP)
+    : activeSeasonKeys()
 
   const results = await Promise.allSettled(
     sportKeys.map(key => fetchOddsForSport(key))
@@ -126,15 +133,14 @@ function getMockGames(): Game[] {
       ],
     },
     {
-      id: "mock-2", sport: "football", league: "NFL",
-      home_team: "Kansas City Chiefs", away_team: "Buffalo Bills", start_date: h(24),
+      id: "mock-2", sport: "baseball", league: "MLB",
+      home_team: "Chicago Cubs", away_team: "Atlanta Braves", start_date: h(5),
       odds: [
-        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Kansas City Chiefs", price: -140 },
-        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Buffalo Bills",      price: 118  },
-        { sportsbook: "FanDuel",    market_name: "spreads",   team_name: "Kansas City Chiefs", price: -110, point: -2.5 },
-        { sportsbook: "FanDuel",    market_name: "totals",    team_name: "Over",               price: -112, point: 47.5 },
-        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Kansas City Chiefs", price: -145 },
-        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Buffalo Bills",      price: 122  },
+        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Chicago Cubs",    price: 105  },
+        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Atlanta Braves",  price: -125 },
+        { sportsbook: "FanDuel",    market_name: "totals",    team_name: "Over",            price: -110, point: 8.0 },
+        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Chicago Cubs",    price: 108  },
+        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Atlanta Braves",  price: -128 },
       ],
     },
     {
