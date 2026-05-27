@@ -5,7 +5,7 @@ import { Home, BookOpen, BarChart2 } from "lucide-react"
 
 const tabs = [
   { href: "/",          icon: Home,      label: "Home"    },
-  { href: "/tracker",   icon: BookOpen,  label: "My Bets" },
+  { href: "/tracker",   icon: BookOpen,  label: "Record"  },
   { href: "/analytics", icon: BarChart2, label: "Stats"   },
 ]
 

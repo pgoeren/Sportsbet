@@ -81,6 +81,16 @@ export async function GET() {
       today: {
         total: todayPicks.length,
         strongBets: todayPicks.filter((p: any) => p.recommendation === "strong_bet").length,
+        picks: todayPicks.map((p: any) => ({
+          league: p.league,
+          homeTeam: p.home_team,
+          awayTeam: p.away_team,
+          pickTeam: p.pick_team,
+          recommendation: p.recommendation,
+          confidence: p.confidence,
+          edgeScore: p.edge_score,
+          gameTime: p.game_time,
+        })),
       },
       allTime: {
         correct: Number(at.correct),
