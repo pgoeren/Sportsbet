@@ -75,11 +75,14 @@ function PickCard({ game }: { game: GameData }) {
 
   const mlEntry  = getOdds(game, pick.team, "moneyline")
   const spreadEntry = getOdds(game, pick.team, "spreads")
-  const isElite  = pick.confidence === "elite"
-  const accentColor = isElite ? "#f5c842" : "#29d87f"
-  const accentBg    = isElite ? "#2a1f00" : "#0d2e1e"
+  const accentColor = pick.confidence === "elite" ? "#f5c842"
+    : pick.confidence === "high" ? "#29d87f"
+    : "#4ea8f8"
+  const accentBg = pick.confidence === "elite" ? "#2a1f00"
+    : pick.confidence === "high" ? "#0d2e1e"
+    : "#0d1e30"
   const opposingTeam = pick.team === game.home_team ? game.away_team : game.home_team
-  const isHome   = pick.team === game.home_team
+  const isHome = pick.team === game.home_team
 
   // Recommend spread when ML is heavy favorite — better value
   const useSpreakAsPrimary = mlEntry !== undefined && mlEntry.price < -185 && spreadEntry !== undefined
@@ -106,7 +109,7 @@ function PickCard({ game }: { game: GameData }) {
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold"
           style={{ backgroundColor: accentBg, color: accentColor, border: `1px solid ${accentColor}` }}>
           <Zap className="w-3 h-3" />
-          {isElite ? "ELITE PICK" : "STRONG BET"}
+          {pick.confidence === "elite" ? "ELITE PICK" : pick.confidence === "high" ? "STRONG BET" : "VALUE BET"}
         </div>
       </div>
 
@@ -341,10 +344,9 @@ export default function HomePage() {
   const filtered = filter === "all" ? games : games.filter(g => g.sport === filter)
   const sports   = ["all", ...Array.from(new Set(games.map(g => g.sport)))]
 
-  // High/elite confidence only — model's actual picks
+  // All games the model recommends — sorted elite → high → medium by edge score
   const bestBets = filtered
-    .filter(g => g.topPick?.recommendation !== "pass" &&
-      (g.topPick?.confidence === "high" || g.topPick?.confidence === "elite"))
+    .filter(g => g.topPick?.recommendation !== "pass")
     .sort((a, b) => {
       const rank = { elite: 0, high: 1, medium: 2, low: 3 } as Record<string, number>
       return (rank[a.topPick.confidence] ?? 3) - (rank[b.topPick.confidence] ?? 3)
@@ -438,9 +440,9 @@ export default function HomePage() {
               {bestBets.length === 0 ? (
                 <div className="rounded-xl p-6 text-center"
                   style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
-                  <p className="font-semibold" style={{ color: "#8c9bb5" }}>No high-confidence picks today</p>
+                  <p className="font-semibold" style={{ color: "#8c9bb5" }}>No model picks today</p>
                   <p className="text-xs mt-1" style={{ color: "#4d6080" }}>
-                    Model only surfaces elite and high-confidence bets — check back later or refresh
+                    Model is passing on all games — check back later or refresh
                   </p>
                 </div>
               ) : (
