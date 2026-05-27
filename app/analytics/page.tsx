@@ -66,21 +66,24 @@ export default function AnalyticsPage() {
     value,
     sub,
     icon: Icon,
-    color,
+    valueColor,
+    iconColor,
   }: {
     label: string
     value: string
     sub?: string
     icon: React.ElementType
-    color: string
+    valueColor: string
+    iconColor: string
   }) => (
-    <div className="rounded-2xl bg-gray-900 border border-white/10 p-4">
+    <div className="rounded-2xl p-4"
+      style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-gray-400">{label}</p>
-        <Icon className={`w-4 h-4 ${color}`} />
+        <p className="text-xs" style={{ color: "#8c9bb5" }}>{label}</p>
+        <Icon className="w-4 h-4" style={{ color: iconColor }} />
       </div>
-      <p className={`text-2xl font-black ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
+      <p className="text-2xl font-black" style={{ color: valueColor }}>{value}</p>
+      {sub && <p className="text-xs mt-1" style={{ color: "#4d6080" }}>{sub}</p>}
     </div>
   )
 
@@ -96,23 +99,25 @@ export default function AnalyticsPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur border-b border-white/10 px-4 py-4">
+      <div className="sticky top-0 z-30 backdrop-blur px-4 py-4"
+        style={{
+          backgroundColor: "rgba(15,25,35,0.96)",
+          borderBottom: "1px solid #1e2d40",
+        }}>
         <h1 className="text-xl font-black text-white">Analytics</h1>
-        <p className="text-xs text-gray-500">Your betting performance</p>
+        <p className="text-xs" style={{ color: "#4d6080" }}>Your betting performance</p>
       </div>
 
       <div className="px-4 pt-4 space-y-4 pb-6">
         {loading ? (
           <div className="grid grid-cols-2 gap-3">
             {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="h-24 rounded-2xl bg-white/5 animate-pulse"
-              />
+              <div key={i} className="h-24 rounded-2xl animate-pulse"
+                style={{ backgroundColor: "#1a2535" }} />
             ))}
           </div>
         ) : settled.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
+          <div className="text-center py-16" style={{ color: "#4d6080" }}>
             <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No settled bets yet</p>
             <p className="text-sm mt-1">Track some bets to see analytics</p>
@@ -125,61 +130,56 @@ export default function AnalyticsPage() {
                 value={`${profit >= 0 ? "+" : ""}$${profit.toFixed(0)}`}
                 sub={`${settled.length} settled bets`}
                 icon={DollarSign}
-                color={profit >= 0 ? "text-green-400" : "text-red-400"}
+                valueColor={profit >= 0 ? "#29d87f" : "#f05b64"}
+                iconColor={profit >= 0 ? "#29d87f" : "#f05b64"}
               />
               <StatCard
                 label="ROI"
                 value={`${roi >= 0 ? "+" : ""}${roi.toFixed(1)}%`}
                 sub={`$${totalStaked.toFixed(0)} staked`}
                 icon={roi >= 0 ? TrendingUp : TrendingDown}
-                color={roi >= 0 ? "text-green-400" : "text-red-400"}
+                valueColor={roi >= 0 ? "#29d87f" : "#f05b64"}
+                iconColor={roi >= 0 ? "#29d87f" : "#f05b64"}
               />
               <StatCard
                 label="Win Rate"
                 value={`${winRate.toFixed(0)}%`}
                 sub={`${won.length}W - ${lost.length}L`}
                 icon={Target}
-                color="text-blue-400"
+                valueColor="#4ea8f8"
+                iconColor="#4ea8f8"
               />
               <StatCard
                 label="Best Sport"
                 value={bestSport ?? "—"}
                 sub="by profit"
                 icon={Award}
-                color="text-yellow-400"
+                valueColor="#f5c842"
+                iconColor="#f5c842"
               />
             </div>
 
             {/* By sport breakdown */}
-            <div className="rounded-2xl bg-gray-900 border border-white/10 p-4 space-y-3">
+            <div className="rounded-2xl p-4 space-y-3"
+              style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
               <h3 className="font-bold text-white text-sm">By Sport</h3>
               {Object.entries(bySport).map(([sport, stats]) => {
                 const total = stats.won + stats.lost
-                const sportWinRate =
-                  total > 0 ? (stats.won / total) * 100 : 0
+                const sportWinRate = total > 0 ? (stats.won / total) * 100 : 0
                 const avgStake = total > 0 ? stats.staked / total : 0
-                const sportProfit =
-                  stats.won_amount - stats.lost * avgStake
+                const sportProfit = stats.won_amount - stats.lost * avgStake
                 return (
-                  <div
-                    key={sport}
-                    className="flex items-center justify-between py-2 border-b border-white/5 last:border-0"
-                  >
+                  <div key={sport} className="flex items-center justify-between py-2 last:border-0"
+                    style={{ borderBottom: "1px solid #1e2d40" }}>
                     <div>
-                      <p className="text-sm font-medium text-white capitalize">
-                        {sport}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {stats.won}W - {stats.lost}L (
-                        {sportWinRate.toFixed(0)}%)
+                      <p className="text-sm font-medium text-white capitalize">{sport}</p>
+                      <p className="text-xs" style={{ color: "#8c9bb5" }}>
+                        {stats.won}W - {stats.lost}L ({sportWinRate.toFixed(0)}%)
                       </p>
                     </div>
                     <div className="text-right">
-                      <p
-                        className={`font-bold text-sm ${
-                          sportProfit >= 0 ? "text-green-400" : "text-red-400"
-                        }`}
-                      >
+                      <p className="font-bold text-sm"
+                        style={{ color: sportProfit >= 0 ? "#29d87f" : "#f05b64" }}>
                         {sportProfit >= 0 ? "+" : ""}${sportProfit.toFixed(0)}
                       </p>
                     </div>

@@ -1,7 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
 import { TrendingUp, Star, Zap } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { BetModal } from "@/components/BetModal"
 import { formatOdds } from "@/lib/utils"
 import { format } from "date-fns"
@@ -76,96 +75,94 @@ export default function PicksPage() {
     saveBet(bet)
   }
 
+  const confidenceBadgeStyle = (confidence: string) => {
+    if (confidence === "elite") return { backgroundColor: "#2a1f00", color: "#f5c842", border: "1px solid #f5c842" }
+    if (confidence === "high") return { backgroundColor: "#0d2e1e", color: "#29d87f", border: "1px solid #29d87f" }
+    if (confidence === "medium") return { backgroundColor: "#0d1e30", color: "#4ea8f8", border: "1px solid #4ea8f8" }
+    return { backgroundColor: "#1e2d40", color: "#4d6080", border: "1px solid #263044" }
+  }
+
   const PickSection = ({
     title,
     picks,
     icon: Icon,
-    color,
+    iconColor,
   }: {
     title: string
     picks: GameData[]
     icon: React.ElementType
-    color: string
+    iconColor: string
   }) =>
     picks.length > 0 ? (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Icon className={`w-4 h-4 ${color}`} />
+          <Icon className="w-4 h-4" style={{ color: iconColor }} />
           <h2 className="font-bold text-white text-sm uppercase tracking-wider">
             {title}
           </h2>
-          <Badge variant="outline" className="text-xs">
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: "#243044", color: "#8c9bb5" }}>
             {picks.length}
-          </Badge>
+          </span>
         </div>
         {picks.map((game) => {
           const pick = game.topPick
           const homeOdds =
             game.odds.find(
-              (o) =>
-                o.market_name === "moneyline" && o.team_name === game.home_team
+              (o) => o.market_name === "moneyline" && o.team_name === game.home_team
             )?.price ?? -110
           const awayOdds =
             game.odds.find(
-              (o) =>
-                o.market_name === "moneyline" && o.team_name === game.away_team
+              (o) => o.market_name === "moneyline" && o.team_name === game.away_team
             )?.price ?? -110
           const isHome = pick.team === game.home_team
           const odds = isHome ? homeOdds : awayOdds
 
           return (
-            <div
-              key={game.id}
-              className="rounded-2xl bg-gray-900 border border-white/10 overflow-hidden"
-            >
+            <div key={game.id} className="rounded-2xl overflow-hidden"
+              style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
               <div className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">
-                    {game.league} •{" "}
-                    {format(new Date(game.start_date), "h:mm a")}
+                  <span className="text-xs" style={{ color: "#8c9bb5" }}>
+                    {game.league} • {format(new Date(game.start_date), "h:mm a")}
                   </span>
-                  <Badge
-                    variant={
-                      pick.confidence as "elite" | "high" | "medium" | "low"
-                    }
-                  >
-                    {pick.confidence.toUpperCase()}
-                  </Badge>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full uppercase"
+                    style={confidenceBadgeStyle(pick.confidence)}>
+                    {pick.confidence}
+                  </span>
                 </div>
-                <p className="text-sm text-gray-400">
+
+                <p className="text-sm" style={{ color: "#8c9bb5" }}>
                   {game.away_team} @ {game.home_team}
                 </p>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-bold text-white text-lg">{pick.team}</p>
-                    <p
-                      className={`font-bold text-xl ${
-                        odds > 0 ? "text-green-400" : "text-white"
-                      }`}
-                    >
+                    <p className="font-bold text-xl"
+                      style={{ color: odds > 0 ? "#29d87f" : "#ffffff" }}>
                       {formatOdds(odds)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-4xl font-black text-white">
-                      {pick.overallEdge}
-                    </p>
-                    <p className="text-xs text-gray-400">EDGE SCORE</p>
+                    <p className="text-4xl font-black text-white">{pick.overallEdge}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#4d6080" }}>EDGE SCORE</p>
                   </div>
                 </div>
+
                 <div className="space-y-1">
                   {pick.reasoning?.slice(0, 2).map((r, i) => (
-                    <p
-                      key={i}
-                      className="text-xs text-gray-400 flex items-start gap-1"
-                    >
-                      <span className="text-blue-400 mt-0.5">•</span> {r}
+                    <p key={i} className="text-xs flex items-start gap-1"
+                      style={{ color: "#8c9bb5" }}>
+                      <span className="mt-0.5" style={{ color: "#4ea8f8" }}>•</span> {r}
                     </p>
                   ))}
                 </div>
+
                 <button
                   onClick={() => handleBet(game, pick.team, odds)}
-                  className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all text-sm"
+                  className="w-full py-3 rounded-xl font-bold text-sm transition-all"
+                  style={{ backgroundColor: "#29d87f", color: "#0f1923" }}
                 >
                   Track This Bet
                 </button>
@@ -178,19 +175,21 @@ export default function PicksPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur border-b border-white/10 px-4 py-4">
+      <div className="sticky top-0 z-30 backdrop-blur px-4 py-4"
+        style={{
+          backgroundColor: "rgba(15,25,35,0.96)",
+          borderBottom: "1px solid #1e2d40",
+        }}>
         <h1 className="text-xl font-black text-white">Today&apos;s Picks</h1>
-        <p className="text-xs text-gray-500">Ranked by edge score</p>
+        <p className="text-xs" style={{ color: "#4d6080" }}>Ranked by edge score</p>
       </div>
 
       <div className="px-4 pt-4 space-y-6 pb-6">
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="h-48 rounded-2xl bg-white/5 animate-pulse"
-              />
+              <div key={i} className="h-48 rounded-2xl animate-pulse"
+                style={{ backgroundColor: "#1a2535" }} />
             ))}
           </div>
         ) : (
@@ -199,19 +198,19 @@ export default function PicksPage() {
               title="Strong Bets"
               picks={strongBets}
               icon={Zap}
-              color="text-yellow-400"
+              iconColor="#f5c842"
             />
             <PickSection
               title="Solid Bets"
               picks={bets}
               icon={Star}
-              color="text-green-400"
+              iconColor="#29d87f"
             />
             <PickSection
               title="Pass"
               picks={passes}
               icon={TrendingUp}
-              color="text-gray-400"
+              iconColor="#4d6080"
             />
           </>
         )}

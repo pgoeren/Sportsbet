@@ -34,37 +34,49 @@ export default function TrackerPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur border-b border-white/10 px-4 py-4">
+      <div className="sticky top-0 z-30 backdrop-blur px-4 py-4"
+        style={{
+          backgroundColor: "rgba(15,25,35,0.96)",
+          borderBottom: "1px solid #1e2d40",
+        }}>
         <h1 className="text-xl font-black text-white">Bet Tracker</h1>
-        <p className="text-xs text-gray-500">{bets.length} total bets</p>
+        <p className="text-xs" style={{ color: "#4d6080" }}>{bets.length} total bets</p>
       </div>
 
       <div className="px-4 pt-4 space-y-4 pb-6">
-        <div className="rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 p-4">
+        {/* Summary card */}
+        <div className="rounded-2xl p-4"
+          style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <p className="text-xs text-gray-400">ROI</p>
-              <p className={`text-xl font-black ${roi >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <p className="text-xs mb-1" style={{ color: "#8c9bb5" }}>ROI</p>
+              <p className="text-xl font-black" style={{ color: roi >= 0 ? "#29d87f" : "#f05b64" }}>
                 {roi >= 0 ? "+" : ""}{roi.toFixed(1)}%
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-400">Won</p>
-              <p className="text-xl font-black text-green-400">+${totalWon.toFixed(0)}</p>
+              <p className="text-xs mb-1" style={{ color: "#8c9bb5" }}>Won</p>
+              <p className="text-xl font-black" style={{ color: "#29d87f" }}>+${totalWon.toFixed(0)}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-400">Lost</p>
-              <p className="text-xl font-black text-red-400">-${totalLost.toFixed(0)}</p>
+              <p className="text-xs mb-1" style={{ color: "#8c9bb5" }}>Lost</p>
+              <p className="text-xl font-black" style={{ color: "#f05b64" }}>-${totalLost.toFixed(0)}</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 bg-white/5 rounded-xl p-1">
+        {/* Tab switcher */}
+        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl"
+          style={{ backgroundColor: "#1a2535" }}>
           {(["pending", "settled"] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`py-2 rounded-lg text-sm font-medium capitalize transition-colors ${tab === t ? "bg-blue-600 text-white" : "text-gray-400"}`}
+              className="py-2 rounded-lg text-sm font-semibold capitalize transition-colors"
+              style={{
+                backgroundColor: tab === t ? "#29d87f" : "transparent",
+                color: tab === t ? "#0f1923" : "#8c9bb5",
+              }}
             >
               {t} ({t === "pending" ? pending.length : settled.length})
             </button>
@@ -72,66 +84,101 @@ export default function TrackerPage() {
         </div>
 
         {displayed.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12" style={{ color: "#4d6080" }}>
             <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p>No {tab} bets</p>
-            {tab === "pending" && <p className="text-sm mt-1">Add bets from the Home or Picks tab</p>}
+            {tab === "pending" && (
+              <p className="text-sm mt-1" style={{ color: "#4d6080" }}>
+                Add bets from the Home or Picks tab
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
             {displayed.map(bet => (
-              <div key={bet.id} className="rounded-2xl bg-gray-900 border border-white/10 p-4 space-y-3">
+              <div key={bet.id} className="rounded-2xl p-4 space-y-3"
+                style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{bet.league} • {bet.betType}</span>
-                  <span className="text-xs text-gray-500">{format(new Date(bet.placedAt), "MMM d, h:mm a")}</span>
+                  <span className="text-xs" style={{ color: "#8c9bb5" }}>
+                    {bet.league} • {bet.betType}
+                  </span>
+                  <span className="text-xs" style={{ color: "#4d6080" }}>
+                    {format(new Date(bet.placedAt), "MMM d, h:mm a")}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-bold text-white">{bet.team}</p>
-                    <p className="text-xs text-gray-400">{bet.awayTeam} @ {bet.homeTeam}</p>
+                    <p className="text-xs" style={{ color: "#8c9bb5" }}>
+                      {bet.awayTeam} @ {bet.homeTeam}
+                    </p>
                   </div>
-                  <p className={`font-bold text-lg ${bet.odds > 0 ? "text-green-400" : "text-white"}`}>
+                  <p className="font-bold text-lg"
+                    style={{ color: bet.odds > 0 ? "#29d87f" : "#ffffff" }}>
                     {formatOdds(bet.odds)}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Stake: <span className="text-white font-medium">${bet.stake.toFixed(2)}</span></span>
-                  <span className="text-gray-400">To win: <span className="text-green-400 font-medium">${bet.potentialWin.toFixed(2)}</span></span>
+                  <span style={{ color: "#8c9bb5" }}>
+                    Stake: <span className="text-white font-medium">${bet.stake.toFixed(2)}</span>
+                  </span>
+                  <span style={{ color: "#8c9bb5" }}>
+                    To win: <span className="font-medium" style={{ color: "#29d87f" }}>${bet.potentialWin.toFixed(2)}</span>
+                  </span>
                 </div>
 
-                {bet.notes && <p className="text-xs text-gray-400 italic">{bet.notes}</p>}
+                {bet.notes && (
+                  <p className="text-xs italic" style={{ color: "#8c9bb5" }}>{bet.notes}</p>
+                )}
 
                 {bet.status === "pending" ? (
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleUpdate(bet.id, "won")}
-                      className="flex items-center justify-center gap-1 py-2 rounded-lg bg-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/30"
+                      className="flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-colors"
+                      style={{ backgroundColor: "#0d2e1e", color: "#29d87f", border: "1px solid #29d87f" }}
                     >
                       <CheckCircle className="w-3 h-3" /> Won
                     </button>
                     <button
                       onClick={() => handleUpdate(bet.id, "lost")}
-                      className="flex items-center justify-center gap-1 py-2 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30"
+                      className="flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-colors"
+                      style={{ backgroundColor: "#3d1218", color: "#f05b64", border: "1px solid #f05b64" }}
                     >
                       <XCircle className="w-3 h-3" /> Lost
                     </button>
                     <button
                       onClick={() => handleDelete(bet.id)}
-                      className="flex items-center justify-center gap-1 py-2 rounded-lg bg-white/10 text-gray-400 text-xs font-medium hover:bg-white/20"
+                      className="flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-colors"
+                      style={{ backgroundColor: "#243044", color: "#8c9bb5" }}
                     >
                       <Trash2 className="w-3 h-3" /> Del
                     </button>
                   </div>
                 ) : (
-                  <div className={`flex items-center justify-center gap-2 py-2 rounded-lg ${bet.status === "won" ? "bg-green-500/20" : bet.status === "lost" ? "bg-red-500/20" : "bg-gray-500/20"}`}>
+                  <div className="flex items-center justify-center gap-2 py-2 rounded-lg"
+                    style={{
+                      backgroundColor: bet.status === "won" ? "#0d2e1e"
+                        : bet.status === "lost" ? "#3d1218" : "#243044",
+                    }}>
                     {bet.status === "won" ? (
-                      <><TrendingUp className="w-4 h-4 text-green-400" /><span className="text-green-400 font-bold">WON +${bet.potentialWin.toFixed(2)}</span></>
+                      <>
+                        <TrendingUp className="w-4 h-4" style={{ color: "#29d87f" }} />
+                        <span className="font-bold" style={{ color: "#29d87f" }}>
+                          WON +${bet.potentialWin.toFixed(2)}
+                        </span>
+                      </>
                     ) : bet.status === "lost" ? (
-                      <><TrendingDown className="w-4 h-4 text-red-400" /><span className="text-red-400 font-bold">LOST -${bet.stake.toFixed(2)}</span></>
+                      <>
+                        <TrendingDown className="w-4 h-4" style={{ color: "#f05b64" }} />
+                        <span className="font-bold" style={{ color: "#f05b64" }}>
+                          LOST -${bet.stake.toFixed(2)}
+                        </span>
+                      </>
                     ) : (
-                      <span className="text-gray-400">PUSH</span>
+                      <span style={{ color: "#8c9bb5" }}>PUSH</span>
                     )}
                   </div>
                 )}

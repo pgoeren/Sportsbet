@@ -137,17 +137,25 @@ export default function HomePage() {
   return (
     <div className="space-y-0">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur border-b border-white/10 px-4 py-4">
+      <div className="sticky top-0 z-30 backdrop-blur px-4 py-4"
+        style={{
+          backgroundColor: "rgba(15,25,35,0.96)",
+          borderBottom: "1px solid #1e2d40",
+        }}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-black text-white tracking-tight">BetEdge</h1>
-            <p className="text-xs text-gray-500">Smart betting recommendations</p>
+            <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-1.5">
+              BetEdge
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#29d87f" }} />
+            </h1>
+            <p className="text-xs" style={{ color: "#4d6080" }}>Smart betting recommendations</p>
           </div>
           <button
             onClick={fetchGames}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            className="p-2 rounded-full transition-colors"
+            style={{ backgroundColor: "#243044" }}
           >
-            <RefreshCw className="w-4 h-4 text-gray-400" />
+            <RefreshCw className="w-4 h-4" style={{ color: "#8c9bb5" }} />
           </button>
         </div>
       </div>
@@ -158,18 +166,21 @@ export default function HomePage() {
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-center">
-            <Zap className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
+          <div className="rounded-xl p-3 text-center"
+            style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
+            <Zap className="w-4 h-4 mx-auto mb-1" style={{ color: "#f5c842" }} />
             <p className="text-lg font-bold text-white">{topPicks.length}</p>
-            <p className="text-xs text-gray-400">Top Picks</p>
+            <p className="text-xs" style={{ color: "#8c9bb5" }}>Top Picks</p>
           </div>
-          <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-center">
-            <Target className="w-4 h-4 text-blue-400 mx-auto mb-1" />
+          <div className="rounded-xl p-3 text-center"
+            style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
+            <Target className="w-4 h-4 mx-auto mb-1" style={{ color: "#4ea8f8" }} />
             <p className="text-lg font-bold text-white">{games.length}</p>
-            <p className="text-xs text-gray-400">Games Today</p>
+            <p className="text-xs" style={{ color: "#8c9bb5" }}>Games Today</p>
           </div>
-          <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-center">
-            <TrendingUp className="w-4 h-4 text-green-400 mx-auto mb-1" />
+          <div className="rounded-xl p-3 text-center"
+            style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
+            <TrendingUp className="w-4 h-4 mx-auto mb-1" style={{ color: "#29d87f" }} />
             <p className="text-lg font-bold text-white">
               {games.length > 0
                 ? Math.round(
@@ -180,7 +191,7 @@ export default function HomePage() {
                   )
                 : 0}
             </p>
-            <p className="text-xs text-gray-400">Avg Edge</p>
+            <p className="text-xs" style={{ color: "#8c9bb5" }}>Avg Edge</p>
           </div>
         </div>
 
@@ -190,11 +201,11 @@ export default function HomePage() {
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
-                filter === s
-                  ? "bg-blue-600 text-white"
-                  : "bg-white/10 text-gray-400 hover:bg-white/20"
-              }`}
+              className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold capitalize transition-colors"
+              style={{
+                backgroundColor: filter === s ? "#29d87f" : "#243044",
+                color: filter === s ? "#0f1923" : "#8c9bb5",
+              }}
             >
               {s}
             </button>
@@ -205,11 +216,12 @@ export default function HomePage() {
         {loading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-40 rounded-2xl bg-white/5 animate-pulse" />
+              <div key={i} className="h-40 rounded-2xl animate-pulse"
+                style={{ backgroundColor: "#1a2535" }} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12" style={{ color: "#4d6080" }}>
             <p>No games found</p>
           </div>
         ) : (
