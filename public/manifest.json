@@ -1,14 +1,45 @@
 {
   "name": "BetEdge - Smart Sports Betting",
   "short_name": "BetEdge",
-  "description": "AI-powered sports betting recommendations",
+  "description": "AI-powered sports betting recommendations with edge analysis",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#030712",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "categories": ["sports", "finance"],
+  "lang": "en",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today's Picks",
+      "url": "/picks",
+      "description": "View today's top picks"
+    },
+    {
+      "name": "Bet Tracker",
+      "url": "/tracker",
+      "description": "Track your bets"
+    }
   ]
 }

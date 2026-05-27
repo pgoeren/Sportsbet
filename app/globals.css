@@ -9,21 +9,44 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html {
+  /* Prevent iOS bounce scroll showing white */
+  background-color: #030712;
+  overscroll-behavior: none;
 }
 
 body {
   background-color: #030712;
   color: #ffffff;
+  /* Safe area support for iOS notch / home indicator */
+  padding-top: env(safe-area-inset-top, 0px);
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Bottom nav sits above iOS home indicator */
 .safe-area-pb {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
 }
 
+/* Scroll containers */
 ::-webkit-scrollbar {
   display: none;
 }
 
 * {
   scrollbar-width: none;
+}
+
+/* Smooth momentum scrolling on iOS */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove 300ms tap delay on mobile */
+a, button {
+  touch-action: manipulation;
 }
