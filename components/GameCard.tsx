@@ -3,7 +3,7 @@ import { useState } from "react"
 import { formatOdds } from "@/lib/utils"
 import { EdgeScoreCard } from "./EdgeScoreCard"
 import { format } from "date-fns"
-import { ChevronDown, ChevronUp, AlertCircle, BarChart2, Info, Zap } from "lucide-react"
+import { ChevronDown, ChevronUp, AlertCircle, BarChart2, Info, Zap, CheckCircle } from "lucide-react"
 import { EdgeResult, InjuryReport } from "@/lib/edge-model"
 import { GameOdd } from "@/lib/odds-api"
 
@@ -36,9 +36,15 @@ interface GameData {
   sources: GameSources
 }
 
+interface TrackInfo {
+  team: string
+  odds: number
+  market: string
+  line?: string
+}
+
 interface GameCardProps {
   game: GameData
-  onBet: (game: GameData, team: string, odds: number) => void
 }
 
 function getSportEmoji(sport: string) {
@@ -79,14 +85,16 @@ function OddsCell({
   )
 }
 
-export function GameCard({ game, onBet }: GameCardProps) {
+export function GameCard({ game }: GameCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [showSources, setShowSources] = useState(false)
+  const [trackInfo, setTrackInfo] = useState<TrackInfo | null>(null)
+  const [stake, setStake] = useState("25")
+  const [tracked, setTracked] = useState(false)
 
   const topPick = game.topPick
   const isRecommended = topPick?.recommendation !== "pass"
 
-  // Get odds by market and team
   const getOdds = (team: string, market: string) =>
     game.odds.find(o => o.market_name === market && o.team_name === team && o.sportsbook === "FanDuel")
     ?? game.odds.find(o => o.market_name === market && o.team_name === team)
@@ -102,6 +110,46 @@ export function GameCard({ game, onBet }: GameCardProps) {
 
   const isAwayPick = isRecommended && topPick.team === game.away_team
   const isHomePick = isRecommended && topPick.team === game.home_team
+
+  const potentialWin = (() => {
+    if (!trackInfo) return 0
+    const s = parseFloat(stake) || 0
+    const o = trackInfo.odds
+    return o > 0 ? (s * o) / 100 : (s * 100) / Math.abs(o)
+  })()
+
+  const track = (team: string, odds: number, market: string, line?: string) => {
+    setTracked(false)
+    setTrackInfo(prev =>
+      prev?.team === team && prev?.market === market ? null : { team, odds, market, line }
+    )
+  }
+
+  const confirmTrack = async () => {
+    const s = parseFloat(stake) || 25
+    const o = trackInfo!.odds
+    const win = o > 0 ? (s * o) / 100 : (s * 100) / Math.abs(o)
+    const { saveBet } = await import("@/lib/bets-store")
+    saveBet({
+      sport: game.sport,
+      league: game.league,
+      homeTeam: game.home_team,
+      awayTeam: game.away_team,
+      betType: trackInfo!.market,
+      team: trackInfo!.team,
+      odds: o,
+      stake: s,
+      potentialWin: win,
+      notes: isRecommended ? `Edge ${topPick.overallEdge} · ${topPick.confidence}` : "",
+      gameId: game.id,
+      status: "pending",
+    })
+    setTracked(true)
+    setTrackInfo(null)
+  }
+
+  const spreadLine = (point: number | undefined) =>
+    point !== undefined ? (point > 0 ? `+${point}` : `${point}`) : undefined
 
   return (
     <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
@@ -125,7 +173,7 @@ export function GameCard({ game, onBet }: GameCardProps) {
               border: `1px solid ${topPick.confidence === "elite" ? "#f5c842" : "#29d87f"}`,
             }}>
             <Zap className="w-3 h-3" />
-            {topPick.confidence === "elite" ? "ELITE" : topPick.confidence === "high" ? "STRONG BET" : "VALUE BET"}
+            {topPick.confidence === "elite" ? "ELITE PICK" : topPick.confidence === "high" ? "STRONG BET" : "VALUE BET"}
           </div>
         )}
       </div>
@@ -151,21 +199,21 @@ export function GameCard({ game, onBet }: GameCardProps) {
           <p className="text-xs" style={{ color: "#8c9bb5" }}>Away</p>
         </div>
         <OddsCell
-          line={awaySpread?.point !== undefined ? (awaySpread.point > 0 ? `+${awaySpread.point}` : `${awaySpread.point}`) : undefined}
+          line={spreadLine(awaySpread?.point)}
           odds={awaySpread?.price}
           isRecommended={isAwayPick}
-          onClick={() => awaySpread && onBet(game, game.away_team, awaySpread.price)}
+          onClick={() => awaySpread && track(game.away_team, awaySpread.price, "Spread", spreadLine(awaySpread.point))}
         />
         <OddsCell
           line={overTotal?.point !== undefined ? `O ${overTotal.point}` : undefined}
           odds={overTotal?.price}
           isRecommended={false}
-          onClick={() => overTotal && onBet(game, "Over", overTotal.price)}
+          onClick={() => overTotal && track("Over", overTotal.price, "Over", overTotal.point !== undefined ? `O ${overTotal.point}` : undefined)}
         />
         <OddsCell
           odds={awayML?.price}
           isRecommended={isAwayPick}
-          onClick={() => awayML && onBet(game, game.away_team, awayML.price)}
+          onClick={() => awayML && track(game.away_team, awayML.price, "Moneyline")}
         />
       </div>
 
@@ -179,37 +227,93 @@ export function GameCard({ game, onBet }: GameCardProps) {
           <p className="text-xs" style={{ color: "#8c9bb5" }}>Home</p>
         </div>
         <OddsCell
-          line={homeSpread?.point !== undefined ? (homeSpread.point > 0 ? `+${homeSpread.point}` : `${homeSpread.point}`) : undefined}
+          line={spreadLine(homeSpread?.point)}
           odds={homeSpread?.price}
           isRecommended={isHomePick}
-          onClick={() => homeSpread && onBet(game, game.home_team, homeSpread.price)}
+          onClick={() => homeSpread && track(game.home_team, homeSpread.price, "Spread", spreadLine(homeSpread.point))}
         />
         <OddsCell
           line={underTotal?.point !== undefined ? `U ${underTotal.point}` : undefined}
           odds={underTotal?.price}
           isRecommended={false}
-          onClick={() => underTotal && onBet(game, "Under", underTotal.price)}
+          onClick={() => underTotal && track("Under", underTotal.price, "Under", underTotal.point !== undefined ? `U ${underTotal.point}` : undefined)}
         />
         <OddsCell
           odds={homeML?.price}
           isRecommended={isHomePick}
-          onClick={() => homeML && onBet(game, game.home_team, homeML.price)}
+          onClick={() => homeML && track(game.home_team, homeML.price, "Moneyline")}
         />
       </div>
 
-      {/* Edge summary bar (only for recommended games) */}
+      {/* Edge summary bar */}
       {isRecommended && (
         <div className="mx-4 mb-3 px-3 py-2 rounded-lg flex items-center gap-2"
           style={{ backgroundColor: "#0d1e30", border: "1px solid #1e3a50" }}>
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <span className="text-xs font-bold" style={{ color: "#29d87f" }}>
-              Edge {topPick.overallEdge}
-            </span>
-            <span className="text-xs" style={{ color: "#4d6080" }}>·</span>
-            <span className="text-xs truncate" style={{ color: "#8c9bb5" }}>
-              {topPick.reasoning?.[0] ?? "Model edge detected"}
+          <span className="text-xs font-bold" style={{ color: "#29d87f" }}>
+            {topPick.team}
+          </span>
+          <span className="text-xs" style={{ color: "#4d6080" }}>·</span>
+          <span className="text-xs font-bold" style={{ color: "#8c9bb5" }}>
+            Edge {topPick.overallEdge}
+          </span>
+          <span className="text-xs" style={{ color: "#4d6080" }}>·</span>
+          <span className="text-xs truncate" style={{ color: "#8c9bb5" }}>
+            {topPick.reasoning?.[0] ?? "Model edge detected"}
+          </span>
+        </div>
+      )}
+
+      {/* Inline track panel */}
+      {trackInfo && (
+        <div className="mx-4 mb-3 rounded-lg p-3 space-y-2"
+          style={{ backgroundColor: "#0d1e30", border: "1px solid #263044" }}>
+          <p className="text-xs" style={{ color: "#8c9bb5" }}>
+            <span className="font-semibold" style={{ color: "#4d6080" }}>{trackInfo.market}</span>
+            {" · "}
+            <span className="font-semibold text-white">{trackInfo.team}</span>
+            {trackInfo.line && <span style={{ color: "#4d6080" }}> {trackInfo.line}</span>}
+            {" · "}
+            <span style={{ color: "#29d87f" }}>{formatOdds(trackInfo.odds)}</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: "#4d6080" }}>Stake $</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={stake}
+              onChange={e => setStake(e.target.value)}
+              className="flex-1 rounded-lg px-3 py-1.5 text-sm font-bold text-white"
+              style={{ backgroundColor: "#243044", border: "1px solid #263044", outline: "none", minWidth: 0 }}
+            />
+            <span className="text-xs font-semibold flex-shrink-0" style={{ color: "#29d87f" }}>
+              → ${potentialWin.toFixed(0)}
             </span>
           </div>
+          <div className="flex gap-2">
+            <button onClick={confirmTrack}
+              className="flex-1 py-2 rounded-lg text-sm font-bold transition-all active:scale-95"
+              style={{ backgroundColor: "#29d87f", color: "#0f1923" }}>
+              Track Bet
+            </button>
+            <button onClick={() => setTrackInfo(null)}
+              className="px-4 py-2 rounded-lg text-sm font-semibold"
+              style={{ backgroundColor: "#243044", color: "#8c9bb5" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tracked confirmation */}
+      {tracked && !trackInfo && (
+        <div className="mx-4 mb-3 flex items-center gap-2 px-3 py-2 rounded-lg"
+          style={{ backgroundColor: "#0d2e1e", border: "1px solid #29d87f" }}>
+          <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#29d87f" }} />
+          <span className="text-sm font-semibold" style={{ color: "#29d87f" }}>Bet tracked!</span>
+          <button onClick={() => setTracked(false)}
+            className="ml-auto text-xs" style={{ color: "#4d6080" }}>
+            dismiss
+          </button>
         </div>
       )}
 
@@ -220,7 +324,7 @@ export function GameCard({ game, onBet }: GameCardProps) {
           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-colors"
           style={{ color: expanded ? "#29d87f" : "#8c9bb5" }}>
           {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          {expanded ? "Hide" : "Edge Analysis"}
+          {expanded ? "Hide Analysis" : "Edge Analysis"}
         </button>
         <div style={{ width: "1px", backgroundColor: "#1e2d40" }} />
         <button
