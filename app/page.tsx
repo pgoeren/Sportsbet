@@ -1,65 +1,228 @@
-import Image from "next/image";
+"use client"
+import { useState, useEffect } from "react"
+import { TrendingUp, Zap, Target, RefreshCw } from "lucide-react"
+import { GameCard } from "@/components/GameCard"
+import { BetModal } from "@/components/BetModal"
 
-export default function Home() {
+interface GameData {
+  id: string
+  sport: string
+  league: string
+  home_team: string
+  away_team: string
+  start_date: string
+  odds: Array<{
+    sportsbook: string
+    market_name: string
+    team_name: string
+    price: number
+    point?: number
+  }>
+  homeEdge: {
+    historicalScore: number
+    injuryScore: number
+    analystScore: number
+    homeAwayScore: number
+    lineMovementScore: number
+    expectedValue: number
+    overallEdge: number
+    confidence: "low" | "medium" | "high" | "elite"
+    recommendation: "pass" | "bet" | "strong_bet"
+    reasoning: string[]
+  }
+  awayEdge: {
+    historicalScore: number
+    injuryScore: number
+    analystScore: number
+    homeAwayScore: number
+    lineMovementScore: number
+    expectedValue: number
+    overallEdge: number
+    confidence: "low" | "medium" | "high" | "elite"
+    recommendation: "pass" | "bet" | "strong_bet"
+    reasoning: string[]
+  }
+  topPick: {
+    team: string
+    historicalScore: number
+    injuryScore: number
+    analystScore: number
+    homeAwayScore: number
+    lineMovementScore: number
+    expectedValue: number
+    overallEdge: number
+    confidence: "low" | "medium" | "high" | "elite"
+    recommendation: "pass" | "bet" | "strong_bet"
+    reasoning: string[]
+  }
+  injuries: Array<{
+    team: string
+    player: string
+    position: string
+    status: "out" | "doubtful" | "questionable" | "probable"
+    impact: number
+  }>
+  analystPicks: Array<{
+    analyst: string
+    pick: string
+    confidence: "low" | "medium" | "high"
+  }>
+}
+
+interface BetPayload {
+  sport: string
+  league: string
+  homeTeam: string
+  awayTeam: string
+  betType: string
+  team: string
+  odds: number
+  stake: number
+  potentialWin: number
+  notes: string
+  gameId: string
+}
+
+export default function HomePage() {
+  const [games, setGames] = useState<GameData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedGame, setSelectedGame] = useState<GameData | null>(null)
+  const [selectedTeam, setSelectedTeam] = useState("")
+  const [selectedOdds, setSelectedOdds] = useState(0)
+  const [filter, setFilter] = useState("all")
+
+  const fetchGames = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/games")
+      const data = await res.json()
+      setGames(data.games ?? [])
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchGames()
+  }, [])
+
+  const handleBet = (game: GameData, team: string, odds: number) => {
+    setSelectedGame(game)
+    setSelectedTeam(team)
+    setSelectedOdds(odds)
+  }
+
+  const handleSubmitBet = async (bet: BetPayload) => {
+    await fetch("/api/bets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bet),
+    })
+  }
+
+  const sports = ["all", ...Array.from(new Set(games.map((g) => g.sport)))]
+  const filtered = filter === "all" ? games : games.filter((g) => g.sport === filter)
+  const topPicks = games.filter(
+    (g) =>
+      g.topPick?.recommendation === "strong_bet" ||
+      g.topPick?.recommendation === "bet"
+  )
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="space-y-0">
+      {/* Header */}
+      <div className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur border-b border-white/10 px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-black text-white tracking-tight">BetEdge</h1>
+            <p className="text-xs text-gray-500">Smart betting recommendations</p>
+          </div>
+          <button
+            onClick={fetchGames}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+      </div>
+
+      <div className="px-4 pt-4 space-y-6">
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-center">
+            <Zap className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
+            <p className="text-lg font-bold text-white">{topPicks.length}</p>
+            <p className="text-xs text-gray-400">Top Picks</p>
+          </div>
+          <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-center">
+            <Target className="w-4 h-4 text-blue-400 mx-auto mb-1" />
+            <p className="text-lg font-bold text-white">{games.length}</p>
+            <p className="text-xs text-gray-400">Games Today</p>
+          </div>
+          <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-center">
+            <TrendingUp className="w-4 h-4 text-green-400 mx-auto mb-1" />
+            <p className="text-lg font-bold text-white">
+              {games.length > 0
+                ? Math.round(
+                    games.reduce(
+                      (a, g) => a + (g.topPick?.overallEdge ?? 0),
+                      0
+                    ) / games.length
+                  )
+                : 0}
+            </p>
+            <p className="text-xs text-gray-400">Avg Edge</p>
+          </div>
+        </div>
+
+        {/* Sport filter */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+          {sports.map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
+                filter === s
+                  ? "bg-blue-600 text-white"
+                  : "bg-white/10 text-gray-400 hover:bg-white/20"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
+        {/* Games list */}
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-40 rounded-2xl bg-white/5 animate-pulse" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <p>No games found</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((game) => (
+              <GameCard key={game.id} game={game} onBet={handleBet} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedGame && (
+        <BetModal
+          game={selectedGame}
+          team={selectedTeam}
+          odds={selectedOdds}
+          onClose={() => setSelectedGame(null)}
+          onSubmit={handleSubmitBet}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
-  );
+  )
 }
