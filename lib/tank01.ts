@@ -9,6 +9,20 @@ const headers = {
   "X-RapidAPI-Host": "tank01-fantasy-stats.p.rapidapi.com",
 }
 
+// Cache the full injury list per sport for 30 minutes.
+// Without this, every game triggers a separate API call — 5 games = 5 calls per load.
+// With this, each sport is fetched once and filtered locally for each matchup.
+const CACHE_TTL_MS = 30 * 60 * 1000
+const sportCache = new Map<string, { data: RawPlayer[]; expiry: number }>()
+
+interface RawPlayer {
+  team: string
+  player: string
+  position: string
+  status: InjuryReport["status"]
+  impact: number
+}
+
 // Position impact weights — how much losing this position hurts
 const POSITION_IMPACT: Record<string, number> = {
   // NBA
@@ -34,45 +48,6 @@ function normalizeStatus(raw: string): InjuryReport["status"] {
   return "probable"
 }
 
-export async function fetchInjuries(sport: string, homeTeam: string, awayTeam: string): Promise<InjuryReport[]> {
-  if (!API_KEY) return getMockInjuries(homeTeam, awayTeam)
-
-  try {
-    const endpoint = getEndpoint(sport)
-    if (!endpoint) return getMockInjuries(homeTeam, awayTeam)
-
-    const res = await axios.get(`${BASE}${endpoint}`, { headers, timeout: 8000 })
-    const raw = res.data?.body ?? res.data ?? []
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (Array.isArray(raw) ? raw : Object.values(raw)).flatMap((player: any) => {
-      const team = player.team ?? player.teamAbv ?? ""
-      const pos  = player.pos ?? player.position ?? "?"
-      const name = player.longName ?? player.playerName ?? player.name ?? "Unknown"
-      const injStatus = player.injStatus ?? player.injury_status ?? player.status ?? "questionable"
-
-      if (![homeTeam, awayTeam].some(t =>
-        t.toLowerCase().includes(team.toLowerCase()) ||
-        team.toLowerCase().includes(t.split(" ").pop()!.toLowerCase())
-      )) return []
-
-      return [{
-        team:    [homeTeam, awayTeam].find(t =>
-          t.toLowerCase().includes(team.toLowerCase()) ||
-          team.toLowerCase().includes(t.split(" ").pop()!.toLowerCase())
-        ) ?? team,
-        player:   name,
-        position: pos,
-        status:   normalizeStatus(injStatus),
-        impact:   getImpact(pos),
-      }]
-    }) as InjuryReport[]
-  } catch (err) {
-    console.error("Tank01 injury fetch error:", err)
-    return getMockInjuries(homeTeam, awayTeam)
-  }
-}
-
 function getEndpoint(sport: string): string | null {
   switch (sport.toLowerCase()) {
     case "basketball": return "/getNBAInjuryList"
@@ -83,10 +58,64 @@ function getEndpoint(sport: string): string | null {
   }
 }
 
+// Fetch (and cache) the full league-wide injury list for a sport.
+// Returns normalized players for the whole league — callers filter by team.
+async function fetchLeagueInjuries(sport: string): Promise<RawPlayer[]> {
+  const endpoint = getEndpoint(sport)
+  if (!endpoint) return []
+
+  const now = Date.now()
+  const cached = sportCache.get(sport)
+  if (cached && now < cached.expiry) return cached.data
+
+  const res = await axios.get(`${BASE}${endpoint}`, { headers, timeout: 8000 })
+  const raw = res.data?.body ?? res.data ?? []
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const players: RawPlayer[] = (Array.isArray(raw) ? raw : Object.values(raw)).map((p: any) => ({
+    team:     p.team ?? p.teamAbv ?? "",
+    player:   p.longName ?? p.playerName ?? p.name ?? "Unknown",
+    position: p.pos ?? p.position ?? "?",
+    status:   normalizeStatus(p.injStatus ?? p.injury_status ?? p.status ?? "questionable"),
+    impact:   getImpact(p.pos ?? p.position ?? "?"),
+  }))
+
+  sportCache.set(sport, { data: players, expiry: now + CACHE_TTL_MS })
+  return players
+}
+
+export async function fetchInjuries(sport: string, homeTeam: string, awayTeam: string): Promise<InjuryReport[]> {
+  if (!API_KEY) return getMockInjuries(homeTeam, awayTeam)
+
+  try {
+    const all = await fetchLeagueInjuries(sport)
+    if (all.length === 0) return getMockInjuries(homeTeam, awayTeam)
+
+    return all
+      .filter(p => [homeTeam, awayTeam].some(t =>
+        t.toLowerCase().includes(p.team.toLowerCase()) ||
+        p.team.toLowerCase().includes(t.split(" ").pop()!.toLowerCase())
+      ))
+      .map(p => ({
+        team: [homeTeam, awayTeam].find(t =>
+          t.toLowerCase().includes(p.team.toLowerCase()) ||
+          p.team.toLowerCase().includes(t.split(" ").pop()!.toLowerCase())
+        ) ?? p.team,
+        player:   p.player,
+        position: p.position,
+        status:   p.status,
+        impact:   p.impact,
+      }))
+  } catch (err) {
+    console.error("Tank01 injury fetch error:", err)
+    return getMockInjuries(homeTeam, awayTeam)
+  }
+}
+
 function getMockInjuries(homeTeam: string, awayTeam: string): InjuryReport[] {
   return [
-    { team: homeTeam, player: "Key Starter",   position: "PG", status: "questionable", impact: 7 },
-    { team: awayTeam, player: "Star Player",   position: "SF", status: "out",          impact: 9 },
-    { team: awayTeam, player: "Backup Guard",  position: "SG", status: "probable",     impact: 4 },
+    { team: homeTeam, player: "Key Starter",  position: "PG", status: "questionable", impact: 7 },
+    { team: awayTeam, player: "Star Player",  position: "SF", status: "out",          impact: 9 },
+    { team: awayTeam, player: "Backup Guard", position: "SG", status: "probable",     impact: 4 },
   ]
 }
