@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { formatOdds } from "@/lib/utils"
+import { getTeamLogoUrl } from "@/lib/team-logos"
 import { EdgeScoreCard } from "./EdgeScoreCard"
 import { format } from "date-fns"
 import { ChevronDown, ChevronUp, AlertCircle, BarChart2, Info, Zap } from "lucide-react"
@@ -144,9 +145,20 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* Away team row */}
       <div className="px-4 pb-1.5 flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-white truncate">{game.away_team}</p>
-          <p className="text-xs" style={{ color: "#4d6080" }}>Away</p>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {(() => {
+            const logo = getTeamLogoUrl(game.away_team, game.league)
+            return logo ? (
+              <img src={logo} alt={game.away_team} width={28} height={28}
+                className="rounded-full flex-shrink-0 object-contain"
+                style={{ backgroundColor: "#0f1923", padding: "1px" }}
+                onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
+            ) : null
+          })()}
+          <div className="min-w-0">
+            <p className="font-bold text-sm text-white truncate">{game.away_team}</p>
+            <p className="text-xs" style={{ color: "#4d6080" }}>Away</p>
+          </div>
         </div>
         <OddsCell line={spreadLine(awaySpread?.point)} odds={awaySpread?.price} isRecommended={isAwayPick} />
         <OddsCell line={overTotal?.point !== undefined ? `O ${overTotal.point}` : undefined} odds={overTotal?.price} isRecommended={false} />
@@ -158,9 +170,20 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* Home team row */}
       <div className="px-4 pt-1.5 pb-3 flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-white truncate">{game.home_team}</p>
-          <p className="text-xs" style={{ color: "#4d6080" }}>Home</p>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {(() => {
+            const logo = getTeamLogoUrl(game.home_team, game.league)
+            return logo ? (
+              <img src={logo} alt={game.home_team} width={28} height={28}
+                className="rounded-full flex-shrink-0 object-contain"
+                style={{ backgroundColor: "#0f1923", padding: "1px" }}
+                onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
+            ) : null
+          })()}
+          <div className="min-w-0">
+            <p className="font-bold text-sm text-white truncate">{game.home_team}</p>
+            <p className="text-xs" style={{ color: "#4d6080" }}>Home</p>
+          </div>
         </div>
         <OddsCell line={spreadLine(homeSpread?.point)} odds={homeSpread?.price} isRecommended={isHomePick} />
         <OddsCell line={underTotal?.point !== undefined ? `U ${underTotal.point}` : undefined} odds={underTotal?.price} isRecommended={false} />

@@ -5,6 +5,7 @@ import { GameCard } from "@/components/GameCard"
 import { EdgeScoreCard } from "@/components/EdgeScoreCard"
 import { PerformanceWidget } from "@/components/PerformanceWidget"
 import { formatOdds } from "@/lib/utils"
+import { getTeamLogoUrl } from "@/lib/team-logos"
 import { format } from "date-fns"
 
 interface GameOdd {
@@ -116,11 +117,22 @@ function PickCard({ game }: { game: GameData }) {
       {/* Main pick */}
       <div className="px-4 pb-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="font-black text-white text-xl leading-tight truncate">{pick.team}</p>
-            <p className="text-sm mt-0.5" style={{ color: "#8c9bb5" }}>
-              {isHome ? "Home" : "Away"} · vs {opposingTeam}
-            </p>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {(() => {
+              const logo = getTeamLogoUrl(pick.team, game.league)
+              return logo ? (
+                <img src={logo} alt={pick.team} width={44} height={44}
+                  className="rounded-full flex-shrink-0 object-contain"
+                  style={{ backgroundColor: "#0f1923", padding: "2px" }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
+              ) : null
+            })()}
+            <div className="min-w-0">
+              <p className="font-black text-white text-xl leading-tight truncate">{pick.team}</p>
+              <p className="text-sm mt-0.5" style={{ color: "#8c9bb5" }}>
+                {isHome ? "Home" : "Away"} · vs {opposingTeam}
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
