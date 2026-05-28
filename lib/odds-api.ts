@@ -54,10 +54,19 @@ export async function fetchUpcomingGames(sport?: string): Promise<Game[]> {
     sportKeys.map(key => fetchOddsForSport(key))
   )
 
-  return results
+  const games = results
     .filter((r): r is PromiseFulfilledResult<Game[]> => r.status === "fulfilled")
     .flatMap(r => r.value)
     .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+
+  // If real API returned nothing (quota exceeded, invalid key, no games), fall back to demo data
+  if (games.length === 0) {
+    console.warn("Odds API returned no games — falling back to demo data")
+    const now = Date.now()
+    return getMockGames().filter(g => new Date(g.start_date).getTime() > now)
+  }
+
+  return games
 }
 
 async function fetchOddsForSport(sportKey: string): Promise<Game[]> {
