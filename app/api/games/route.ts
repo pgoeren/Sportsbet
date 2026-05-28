@@ -133,7 +133,20 @@ export async function GET(request: Request) {
       })
     )
 
-    return NextResponse.json({ games: enriched })
+    const firstGame = enriched[0]
+    const isMockOdds = enriched.every(g => g.id.startsWith("mock-"))
+    const isMockInjuries = firstGame?.injuries?.every((inj: { player: string }) =>
+      ["Key Starter", "Star Player", "Backup Guard"].includes(inj.player)
+    ) ?? true
+
+    return NextResponse.json({
+      games: enriched,
+      _debug: {
+        oddsApi: isMockOdds ? "mock" : "live",
+        tank01: !process.env.TANK01_API_KEY ? "no key" : isMockInjuries ? "mock (fallback)" : "live",
+        gamesCount: enriched.length,
+      },
+    })
   } catch (error) {
     console.error("Games API error:", error)
     return NextResponse.json({ error: "Failed to fetch games" }, { status: 500 })
