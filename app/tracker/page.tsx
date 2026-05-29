@@ -124,36 +124,61 @@ function PickRow({ pick }: { pick: HistoryPick }) {
   )
 }
 
-function TierRow({
-  label, color, bg, tier,
+function TierSection({
+  label, color, bg, tier, picks,
 }: {
   label: string
   color: string
   bg: string
   tier: TierStats
+  picks: HistoryPick[]
 }) {
+  const [open, setOpen] = useState(false)
   const total = tier.correct + tier.incorrect
+
   return (
-    <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid #1e2d40" }}>
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-        <span className="text-sm font-semibold" style={{ color }}>{label}</span>
-      </div>
-      <div className="flex items-center gap-3">
-        {total > 0 ? (
-          <>
-            <span className="text-sm" style={{ color: "#8c9bb5" }}>
-              {tier.correct} won / {total} picks
+    <div className="overflow-hidden" style={{ borderTop: "1px solid #1e2d40" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+          <span className="text-sm font-semibold" style={{ color }}>{label}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {total > 0 ? (
+            <>
+              <span className="text-sm" style={{ color: "#8c9bb5" }}>
+                {tier.correct} won / {total} picks
+              </span>
+              <span className="font-black text-sm px-3 py-1 rounded-lg"
+                style={{ backgroundColor: bg, color }}>
+                {tier.winRate}%
+              </span>
+            </>
+          ) : (
+            <span className="text-xs" style={{ color: "#4d6080" }}>No history yet</span>
+          )}
+          {picks.length > 0 && (
+            open
+              ? <ChevronUp   className="w-4 h-4" style={{ color: "#4d6080" }} />
+              : <ChevronDown className="w-4 h-4" style={{ color: "#4d6080" }} />
+          )}
+        </div>
+      </button>
+
+      {open && picks.length > 0 && (
+        <div style={{ borderTop: "1px solid #1e2d40", backgroundColor: "#141e2d" }}>
+          <div className="px-4 py-2">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4d6080" }}>
+              {picks.length} pick{picks.length !== 1 ? "s" : ""} · $5 per bet
             </span>
-            <span className="font-black text-sm px-3 py-1 rounded-lg"
-              style={{ backgroundColor: bg, color }}>
-              {tier.winRate}%
-            </span>
-          </>
-        ) : (
-          <span className="text-xs" style={{ color: "#4d6080" }}>No history yet</span>
-        )}
-      </div>
+          </div>
+          {picks.map((pick, i) => (
+            <PickRow key={i} pick={pick} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -290,12 +315,13 @@ export default function RecordPage() {
                 { key: "high",   label: "Strong Bet", color: "#29d87f", bg: "#0d2e1e" },
                 { key: "medium", label: "Value Bet",  color: "#4ea8f8", bg: "#0d1e30" },
               ] as const).map(({ key, label, color, bg }) => (
-                <TierRow
+                <TierSection
                   key={key}
                   label={label}
                   color={color}
                   bg={bg}
                   tier={data.allTime.byConfidence?.[key] ?? { correct: 0, incorrect: 0, winRate: null }}
+                  picks={data.allTime.history.filter(p => p.confidence === key)}
                 />
               ))}
             </div>
