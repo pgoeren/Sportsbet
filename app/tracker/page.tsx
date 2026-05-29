@@ -51,6 +51,17 @@ interface PerformanceData {
   }
 }
 
+const SPORT_META: Record<string, { icon: string; label: string }> = {
+  NBA: { icon: "🏀", label: "NBA" },
+  MLB: { icon: "⚾", label: "MLB" },
+  NFL: { icon: "🏈", label: "NFL" },
+  NHL: { icon: "🏒", label: "NHL" },
+}
+
+function sportMeta(league: string) {
+  return SPORT_META[league] ?? { icon: "🎯", label: league }
+}
+
 function confidenceLabel(c: string) {
   if (c === "elite") return "ELITE"
   if (c === "high")  return "STRONG"
@@ -67,111 +78,128 @@ function confidenceBg(c: string) {
   return "#0d1e30"
 }
 
-function fiveDollarReturn(odds: number | null): string | null {
-  if (odds === null) return null
+function betReturn(odds: number | null, result: "correct" | "incorrect" | "push"): { text: string; color: string } {
+  if (result === "push")      return { text: "$5.00 back",  color: "#8c9bb5" }
+  if (result === "incorrect") return { text: "-$5.00",      color: "#f05b64" }
+  if (odds === null)           return { text: "WIN",         color: "#29d87f" }
   const profit = odds > 0 ? 5 * (odds / 100) : 5 * (100 / Math.abs(odds))
-  return `$${(5 + profit).toFixed(2)}`
+  return { text: `$5 → $${(5 + profit).toFixed(2)}`, color: "#29d87f" }
 }
 
-function PickRow({ pick, isLast }: { pick: HistoryPick; isLast: boolean }) {
-  const ret = fiveDollarReturn(pick.odds)
+function PickRow({ pick }: { pick: HistoryPick }) {
   const isWin  = pick.result === "correct"
   const isLoss = pick.result === "incorrect"
+  const ret    = betReturn(pick.odds, pick.result)
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3"
-      style={{ borderTop: "1px solid #1e2d40" }}>
-      {/* Result icon */}
+    <div className="flex items-center gap-3 px-4 py-3" style={{ borderTop: "1px solid #1e2d40" }}>
       <div className="flex-shrink-0 w-5">
         {isWin  && <CheckCircle className="w-5 h-5" style={{ color: "#29d87f" }} />}
-        {isLoss && <XCircle    className="w-5 h-5" style={{ color: "#f05b64" }} />}
+        {isLoss && <XCircle     className="w-5 h-5" style={{ color: "#f05b64" }} />}
         {pick.result === "push" && (
           <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "#8c9bb5" }} />
         )}
       </div>
 
-      {/* Pick info */}
       <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded"
+            style={{ backgroundColor: confidenceBg(pick.confidence), color: confidenceColor(pick.confidence) }}>
+            {confidenceLabel(pick.confidence)}
+          </span>
+        </div>
         <p className="font-semibold text-white text-sm truncate">{pick.pickTeam}</p>
         <p className="text-xs truncate" style={{ color: "#4d6080" }}>
-          {pick.awayTeam} @ {pick.homeTeam} · {pick.league}
+          {pick.awayTeam} @ {pick.homeTeam}
         </p>
       </div>
 
-      {/* Right: date / $5 return */}
       <div className="text-right flex-shrink-0 space-y-0.5">
-        <p className="text-xs font-bold"
-          style={{ color: isWin ? "#29d87f" : isLoss ? "#f05b64" : "#8c9bb5" }}>
-          {isWin ? "WIN" : isLoss ? "LOSS" : "PUSH"}
-          {isWin && ret ? ` → ${ret}` : ""}
-        </p>
+        <p className="text-xs font-bold" style={{ color: ret.color }}>{ret.text}</p>
         <p className="text-xs" style={{ color: "#4d6080" }}>
           {format(parseISO(String(pick.date).slice(0, 10)), "MMM d")}
         </p>
-        {!isWin && ret && (
-          <p className="text-xs" style={{ color: "#4d6080" }}>$5 bet</p>
+      </div>
+    </div>
+  )
+}
+
+function TierRow({
+  label, color, bg, tier,
+}: {
+  label: string
+  color: string
+  bg: string
+  tier: TierStats
+}) {
+  const total = tier.correct + tier.incorrect
+  return (
+    <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid #1e2d40" }}>
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+        <span className="text-sm font-semibold" style={{ color }}>{label}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        {total > 0 ? (
+          <>
+            <span className="text-sm" style={{ color: "#8c9bb5" }}>
+              {tier.correct} won / {total} picks
+            </span>
+            <span className="font-black text-sm px-3 py-1 rounded-lg"
+              style={{ backgroundColor: bg, color }}>
+              {tier.winRate}%
+            </span>
+          </>
+        ) : (
+          <span className="text-xs" style={{ color: "#4d6080" }}>No history yet</span>
         )}
       </div>
     </div>
   )
 }
 
-function TierSection({
-  tierKey, label, color, bg, tier, picks,
-}: {
-  tierKey: string
-  label: string
-  color: string
-  bg: string
-  tier: TierStats
-  picks: HistoryPick[]
-}) {
-  const [open, setOpen] = useState(false)
-  const total = tier.correct + tier.incorrect
+function SportSection({ league, picks }: { league: string; picks: HistoryPick[] }) {
+  const [open, setOpen] = useState(true)
+  const { icon, label } = sportMeta(league)
+  const wins   = picks.filter(p => p.result === "correct").length
+  const losses = picks.filter(p => p.result === "incorrect").length
+  const total  = picks.length
+
+  const netReturn = picks.reduce((sum, p) => {
+    if (p.result === "push" || p.odds === null) return sum
+    if (p.result === "incorrect") return sum - 5
+    const profit = p.odds > 0 ? 5 * (p.odds / 100) : 5 * (100 / Math.abs(p.odds))
+    return sum + profit
+  }, 0)
 
   return (
-    <div className="overflow-hidden" style={{ borderTop: "1px solid #1e2d40" }}>
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-          <span className="text-sm font-semibold" style={{ color }}>{label}</span>
+          <span className="text-xl leading-none">{icon}</span>
+          <span className="font-black text-white text-sm">{label}</span>
+          <span className="text-xs px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: "#0f1923", color: "#8c9bb5" }}>
+            {wins}–{losses} · {total} picks
+          </span>
         </div>
-        <div className="flex items-center gap-3">
-          {total > 0 ? (
-            <>
-              <span className="text-sm" style={{ color: "#8c9bb5" }}>
-                {tier.correct}–{tier.incorrect}
-              </span>
-              <span className="font-black text-sm px-3 py-1 rounded-lg"
-                style={{ backgroundColor: bg, color }}>
-                {tier.winRate}%
-              </span>
-            </>
-          ) : (
-            <span className="text-xs" style={{ color: "#4d6080" }}>No history yet</span>
-          )}
-          {picks.length > 0 && (
-            open
-              ? <ChevronUp className="w-4 h-4" style={{ color: "#4d6080" }} />
-              : <ChevronDown className="w-4 h-4" style={{ color: "#4d6080" }} />
-          )}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold"
+            style={{ color: netReturn >= 0 ? "#29d87f" : "#f05b64" }}>
+            {netReturn >= 0 ? "+" : ""}${netReturn.toFixed(2)}
+          </span>
+          {open
+            ? <ChevronUp  className="w-4 h-4" style={{ color: "#4d6080" }} />
+            : <ChevronDown className="w-4 h-4" style={{ color: "#4d6080" }} />}
         </div>
       </button>
 
-      {open && picks.length > 0 && (
-        <div style={{ borderTop: "1px solid #1e2d40", backgroundColor: "#141e2d" }}>
-          <div className="px-4 py-2 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4d6080" }}>
-              {picks.length} pick{picks.length !== 1 ? "s" : ""}
-            </span>
-            {picks.some(p => p.odds !== null) && (
-              <span className="text-xs" style={{ color: "#4d6080" }}>$5 bet → return</span>
-            )}
-          </div>
+      {open && (
+        <div style={{ borderTop: "1px solid #1e2d40" }}>
           {picks.map((pick, i) => (
-            <PickRow key={i} pick={pick} isLast={i === picks.length - 1} />
+            <PickRow key={i} pick={pick} />
           ))}
         </div>
       )}
@@ -194,6 +222,19 @@ export default function RecordPage() {
       .catch(() => setNoDb(true))
       .finally(() => setLoading(false))
   }, [])
+
+  // Group history by league, preserve date-desc order within each group
+  const byLeague = data
+    ? Object.entries(
+        data.allTime.history.reduce<Record<string, HistoryPick[]>>((acc, p) => {
+          ;(acc[p.league] ??= []).push(p)
+          return acc
+        }, {})
+      ).sort(([a], [b]) => {
+        const order = ["NBA", "NFL", "MLB", "NHL"]
+        return (order.indexOf(a) ?? 99) - (order.indexOf(b) ?? 99)
+      })
+    : []
 
   return (
     <div>
@@ -222,14 +263,16 @@ export default function RecordPage() {
           </div>
         ) : data ? (
           <>
-            {/* All-time record + collapsible tier breakdown */}
+            {/* ── All-time record + tier breakdown ───────────────────────── */}
             <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
-              {/* Summary header */}
               <div className="p-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#4d6080" }}>All-Time Record</p>
                   <p className="text-3xl font-black text-white mt-1">
                     {data.allTime.correct}–{data.allTime.incorrect}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#4d6080" }}>
+                    {data.allTime.correct + data.allTime.incorrect} total picks suggested
                   </p>
                 </div>
                 <div className="text-right">
@@ -242,25 +285,22 @@ export default function RecordPage() {
                 </div>
               </div>
 
-              {/* Collapsible tier rows */}
               {([
-                { key: "elite",  label: "Elite Pick",  color: "#f5c842", bg: "#2a1f00" },
-                { key: "high",   label: "Strong Bet",  color: "#29d87f", bg: "#0d2e1e" },
-                { key: "medium", label: "Value Bet",   color: "#4ea8f8", bg: "#0d1e30" },
+                { key: "elite",  label: "Elite Pick", color: "#f5c842", bg: "#2a1f00" },
+                { key: "high",   label: "Strong Bet", color: "#29d87f", bg: "#0d2e1e" },
+                { key: "medium", label: "Value Bet",  color: "#4ea8f8", bg: "#0d1e30" },
               ] as const).map(({ key, label, color, bg }) => (
-                <TierSection
+                <TierRow
                   key={key}
-                  tierKey={key}
                   label={label}
                   color={color}
                   bg={bg}
                   tier={data.allTime.byConfidence?.[key] ?? { correct: 0, incorrect: 0, winRate: null }}
-                  picks={data.allTime.history.filter(p => p.confidence === key)}
                 />
               ))}
             </div>
 
-            {/* Today's pending picks */}
+            {/* ── Today's pending picks ───────────────────────────────────── */}
             {data.today.picks?.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -275,6 +315,7 @@ export default function RecordPage() {
                       style={{ borderTop: i > 0 ? "1px solid #1e2d40" : undefined }}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-lg leading-none">{sportMeta(pick.league).icon}</span>
                           <span className="text-xs font-bold px-1.5 py-0.5 rounded"
                             style={{ backgroundColor: confidenceBg(pick.confidence), color: confidenceColor(pick.confidence) }}>
                             {confidenceLabel(pick.confidence)}
@@ -296,7 +337,23 @@ export default function RecordPage() {
               </div>
             )}
 
-            {/* Empty state */}
+            {/* ── History by sport ─────────────────────────────────────────── */}
+            {byLeague.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-white">History by Sport</h2>
+                  <div className="flex-1" style={{ height: "1px", backgroundColor: "#1e2d40" }} />
+                </div>
+                <p className="text-xs" style={{ color: "#4d6080", marginTop: "-4px" }}>
+                  Based on a $5 bet per pick
+                </p>
+                {byLeague.map(([league, picks]) => (
+                  <SportSection key={league} league={league} picks={picks} />
+                ))}
+              </div>
+            )}
+
+            {/* ── Empty state ──────────────────────────────────────────────── */}
             {data.allTime.history.length === 0 && data.today.picks.length === 0 && (
               <div className="text-center py-12" style={{ color: "#4d6080" }}>
                 <Award className="w-10 h-10 mx-auto mb-3 opacity-30" />
