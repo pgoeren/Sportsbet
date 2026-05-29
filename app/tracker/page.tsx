@@ -326,6 +326,22 @@ export default function RecordPage() {
               ))}
             </div>
 
+            {/* ── History by sport ─────────────────────────────────────────── */}
+            {byLeague.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-white">History by Sport</h2>
+                  <div className="flex-1" style={{ height: "1px", backgroundColor: "#1e2d40" }} />
+                </div>
+                <p className="text-xs" style={{ color: "#4d6080", marginTop: "-4px" }}>
+                  Based on a $5 bet per pick
+                </p>
+                {byLeague.map(([league, picks]) => (
+                  <SportSection key={league} league={league} picks={picks} />
+                ))}
+              </div>
+            )}
+
             {/* ── Today's pending picks ───────────────────────────────────── */}
             {data.today.picks?.length > 0 && (
               <div className="space-y-2">
@@ -360,22 +376,6 @@ export default function RecordPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* ── History by sport ─────────────────────────────────────────── */}
-            {byLeague.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-white">History by Sport</h2>
-                  <div className="flex-1" style={{ height: "1px", backgroundColor: "#1e2d40" }} />
-                </div>
-                <p className="text-xs" style={{ color: "#4d6080", marginTop: "-4px" }}>
-                  Based on a $5 bet per pick
-                </p>
-                {byLeague.map(([league, picks]) => (
-                  <SportSection key={league} league={league} picks={picks} />
-                ))}
               </div>
             )}
 
