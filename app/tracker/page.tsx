@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
-import { CheckCircle, XCircle, Clock, TrendingUp, TrendingDown, Target, Award, BarChart3 } from "lucide-react"
+import { CheckCircle, XCircle, Clock, BarChart3, Award } from "lucide-react"
+import { format, parseISO } from "date-fns"
 
 interface TodayPick {
   league: string
@@ -13,15 +14,15 @@ interface TodayPick {
   gameTime: string
 }
 
-interface YesterdayPick {
+interface HistoryPick {
+  date: string
   league: string
   homeTeam: string
   awayTeam: string
   pickTeam: string
-  recommendation: string
   confidence: string
   edgeScore: number
-  result: "correct" | "incorrect" | "push" | null
+  result: "correct" | "incorrect" | "push"
 }
 
 interface TierStats {
@@ -31,14 +32,6 @@ interface TierStats {
 }
 
 interface PerformanceData {
-  yesterday: {
-    date: string
-    correct: number
-    incorrect: number
-    pending: number
-    winRate: number | null
-    picks: YesterdayPick[]
-  }
   today: {
     total: number
     strongBets: number
@@ -53,19 +46,33 @@ interface PerformanceData {
       high: TierStats
       medium: TierStats
     }
+    history: HistoryPick[]
   }
 }
 
-function confidenceColor(confidence: string) {
-  if (confidence === "elite") return "#f5c842"
-  if (confidence === "high") return "#29d87f"
-  return "#8c9bb5"
+function confidenceLabel(c: string) {
+  if (c === "elite") return "ELITE"
+  if (c === "high")  return "STRONG"
+  return "VALUE"
+}
+
+function confidenceColor(c: string) {
+  if (c === "elite") return "#f5c842"
+  if (c === "high")  return "#29d87f"
+  return "#4ea8f8"
+}
+
+function confidenceBg(c: string) {
+  if (c === "elite") return "#2a1f00"
+  if (c === "high")  return "#0d2e1e"
+  return "#0d1e30"
 }
 
 export default function RecordPage() {
   const [data, setData] = useState<PerformanceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [noDb, setNoDb] = useState(false)
+  const [tierFilter, setTierFilter] = useState<"all" | "elite" | "high" | "medium">("all")
 
   useEffect(() => {
     fetch("/api/performance")
@@ -105,7 +112,7 @@ export default function RecordPage() {
           </div>
         ) : data ? (
           <>
-            {/* All-time stats */}
+            {/* All-time summary + tier breakdown */}
             <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
               <div className="p-4 flex items-center justify-between">
                 <div>
@@ -123,13 +130,12 @@ export default function RecordPage() {
                 </div>
               </div>
 
-              {/* Per-tier breakdown */}
               <div style={{ borderTop: "1px solid #1e2d40" }}>
-                {[
+                {([
                   { key: "elite"  as const, label: "Elite Pick",  color: "#f5c842", bg: "#2a1f00" },
                   { key: "high"   as const, label: "Strong Bet",  color: "#29d87f", bg: "#0d2e1e" },
                   { key: "medium" as const, label: "Value Bet",   color: "#4ea8f8", bg: "#0d1e30" },
-                ].map(({ key, label, color, bg }, i) => {
+                ]).map(({ key, label, color, bg }, i) => {
                   const tier = data.allTime.byConfidence?.[key]
                   const total = tier ? tier.correct + tier.incorrect : 0
                   return (
@@ -158,125 +164,118 @@ export default function RecordPage() {
               </div>
             </div>
 
-            {/* Today's picks */}
+            {/* Today's pending picks */}
             {data.today.picks?.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-white">Today&apos;s Picks</h2>
                   <div className="flex-1" style={{ height: "1px", backgroundColor: "#1e2d40" }} />
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: "#243044", color: "#8c9bb5" }}>
-                    {data.today.picks.length}
-                  </span>
+                  <Clock className="w-3.5 h-3.5" style={{ color: "#4d6080" }} />
+                  <span className="text-xs" style={{ color: "#4d6080" }}>Pending</span>
                 </div>
-                {data.today.picks.map((pick, i) => (
-                  <div key={i} className="rounded-xl p-4 flex items-center justify-between"
-                    style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-bold uppercase tracking-wider"
-                          style={{ color: "#4d6080" }}>{pick.league}</span>
-                        <span className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-                          style={{
-                            backgroundColor: pick.confidence === "elite" ? "#2a1f00" : "#0d2e1e",
-                            color: confidenceColor(pick.confidence),
-                          }}>
-                          {pick.confidence.toUpperCase()}
-                        </span>
+                <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
+                  {data.today.picks.map((pick, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-3"
+                      style={{ borderTop: i > 0 ? "1px solid #1e2d40" : undefined }}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-xs font-bold px-1.5 py-0.5 rounded"
+                            style={{ backgroundColor: confidenceBg(pick.confidence), color: confidenceColor(pick.confidence) }}>
+                            {confidenceLabel(pick.confidence)}
+                          </span>
+                          <span className="text-xs" style={{ color: "#4d6080" }}>{pick.league}</span>
+                        </div>
+                        <p className="font-bold text-white text-sm truncate">{pick.pickTeam}</p>
+                        <p className="text-xs truncate" style={{ color: "#4d6080" }}>
+                          {pick.awayTeam} @ {pick.homeTeam}
+                        </p>
                       </div>
-                      <p className="font-bold text-white truncate">{pick.pickTeam}</p>
-                      <p className="text-xs truncate" style={{ color: "#8c9bb5" }}>
-                        {pick.awayTeam} @ {pick.homeTeam}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 ml-3" style={{ color: "#4d6080" }}>
-                      <Clock className="w-4 h-4" />
-                      <span className="text-xs">Pending</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Yesterday's results */}
-            {(data.yesterday.correct + data.yesterday.incorrect + data.yesterday.pending) > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-white">Yesterday&apos;s Results</h2>
-                  <div className="flex-1" style={{ height: "1px", backgroundColor: "#1e2d40" }} />
-                  {data.yesterday.winRate !== null && (
-                    <span className="text-xs font-bold"
-                      style={{ color: data.yesterday.winRate >= 55 ? "#29d87f" : data.yesterday.winRate >= 45 ? "#f5c842" : "#f05b64" }}>
-                      {data.yesterday.winRate}% W/R
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { icon: TrendingUp, color: "#29d87f", value: data.yesterday.correct, label: "Correct" },
-                    { icon: TrendingDown, color: "#f05b64", value: data.yesterday.incorrect, label: "Incorrect" },
-                    { icon: Target, color: "#4d6080", value: data.yesterday.pending, label: "Pending" },
-                  ].map(({ icon: Icon, color, value, label }) => (
-                    <div key={label} className="rounded-xl p-3 text-center"
-                      style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
-                      <Icon className="w-4 h-4 mx-auto mb-1" style={{ color }} />
-                      <p className="text-xl font-black" style={{ color }}>{value}</p>
-                      <p className="text-xs" style={{ color: "#4d6080" }}>{label}</p>
+                      <Clock className="w-4 h-4 ml-3 flex-shrink-0" style={{ color: "#4d6080" }} />
                     </div>
                   ))}
                 </div>
-
-                {data.yesterday.picks.length > 0 && (
-                  <div className="rounded-xl overflow-hidden"
-                    style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
-                    {data.yesterday.picks.map((pick, i) => (
-                      <div key={i} className="px-4 py-3 flex items-center justify-between"
-                        style={{ borderBottom: i < data.yesterday.picks.length - 1 ? "1px solid #1e2d40" : "none" }}>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-white truncate text-sm">{pick.pickTeam}</p>
-                          <p className="text-xs truncate" style={{ color: "#4d6080" }}>
-                            {pick.league} · Edge {pick.edgeScore}
-                            {pick.confidence ? ` · ${pick.confidence}` : ""}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 ml-3">
-                          {pick.result === "correct" && (
-                            <>
-                              <CheckCircle className="w-4 h-4" style={{ color: "#29d87f" }} />
-                              <span className="text-sm font-bold" style={{ color: "#29d87f" }}>WIN</span>
-                            </>
-                          )}
-                          {pick.result === "incorrect" && (
-                            <>
-                              <XCircle className="w-4 h-4" style={{ color: "#f05b64" }} />
-                              <span className="text-sm font-bold" style={{ color: "#f05b64" }}>LOSS</span>
-                            </>
-                          )}
-                          {pick.result === "push" && (
-                            <span className="text-sm" style={{ color: "#8c9bb5" }}>PUSH</span>
-                          )}
-                          {!pick.result && (
-                            <>
-                              <Clock className="w-4 h-4" style={{ color: "#4d6080" }} />
-                              <span className="text-sm" style={{ color: "#4d6080" }}>TBD</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 
-            {data.yesterday.correct + data.yesterday.incorrect + data.yesterday.pending === 0 &&
-              (!data.today.picks || data.today.picks.length === 0) && (
-              <div className="text-center py-12" style={{ color: "#4d6080" }}>
-                <Award className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="font-medium" style={{ color: "#8c9bb5" }}>No picks tracked yet</p>
-                <p className="text-sm mt-1">Model picks are auto-tracked when games load on the Home tab</p>
+            {/* Pick history */}
+            {data.allTime.history?.length > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-white">Pick History</h2>
+                  <div className="flex-1" style={{ height: "1px", backgroundColor: "#1e2d40" }} />
+                </div>
+
+                {/* Tier filter */}
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {(["all", "elite", "high", "medium"] as const).map(t => (
+                    <button key={t} onClick={() => setTierFilter(t)}
+                      className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold capitalize"
+                      style={{
+                        backgroundColor: tierFilter === t
+                          ? (t === "all" ? "#243044" : confidenceBg(t))
+                          : "#1a2535",
+                        color: tierFilter === t
+                          ? (t === "all" ? "#ffffff" : confidenceColor(t))
+                          : "#4d6080",
+                        border: tierFilter === t
+                          ? `1px solid ${t === "all" ? "#263044" : confidenceColor(t)}`
+                          : "1px solid #263044",
+                      }}>
+                      {t === "all" ? "All" : t === "elite" ? "Elite" : t === "high" ? "Strong" : "Value"}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
+                  {data.allTime.history
+                    .filter(p => tierFilter === "all" || p.confidence === tierFilter)
+                    .map((pick, i, arr) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3"
+                        style={{ borderTop: i > 0 ? "1px solid #1e2d40" : undefined }}>
+                        {/* Result icon */}
+                        <div className="flex-shrink-0">
+                          {pick.result === "correct" && <CheckCircle className="w-5 h-5" style={{ color: "#29d87f" }} />}
+                          {pick.result === "incorrect" && <XCircle className="w-5 h-5" style={{ color: "#f05b64" }} />}
+                          {pick.result === "push" && <div className="w-5 h-5 rounded-full border-2 flex-shrink-0" style={{ borderColor: "#8c9bb5" }} />}
+                        </div>
+
+                        {/* Pick info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-xs font-bold px-1.5 py-0.5 rounded"
+                              style={{ backgroundColor: confidenceBg(pick.confidence), color: confidenceColor(pick.confidence) }}>
+                              {confidenceLabel(pick.confidence)}
+                            </span>
+                            <span className="text-xs" style={{ color: "#4d6080" }}>{pick.league}</span>
+                          </div>
+                          <p className="font-semibold text-white text-sm truncate">{pick.pickTeam}</p>
+                          <p className="text-xs truncate" style={{ color: "#4d6080" }}>
+                            {pick.awayTeam} @ {pick.homeTeam}
+                          </p>
+                        </div>
+
+                        {/* Date + result */}
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-bold"
+                            style={{ color: pick.result === "correct" ? "#29d87f" : pick.result === "incorrect" ? "#f05b64" : "#8c9bb5" }}>
+                            {pick.result === "correct" ? "WIN" : pick.result === "incorrect" ? "LOSS" : "PUSH"}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "#4d6080" }}>
+                            {format(parseISO(String(pick.date).slice(0, 10)), "MMM d")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
               </div>
+            ) : (
+              data.today.picks.length === 0 && (
+                <div className="text-center py-12" style={{ color: "#4d6080" }}>
+                  <Award className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="font-medium" style={{ color: "#8c9bb5" }}>No picks tracked yet</p>
+                  <p className="text-sm mt-1">Model picks are auto-tracked when games load on the Home tab</p>
+                </div>
+              )
             )}
           </>
         ) : null}

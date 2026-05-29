@@ -39,9 +39,9 @@ export async function GET() {
       ? Math.round((correct / (correct + incorrect)) * 100)
       : null
 
-    // All-time stats — overall + per confidence tier
+    // All-time stats — overall + per confidence tier + full settled history
     const sql = getDb()
-    const [allTime, byTier] = await Promise.all([
+    const [allTime, byTier, history] = await Promise.all([
       sql`
         SELECT
           COUNT(*) FILTER (WHERE result = 'correct')   AS correct,
@@ -57,6 +57,13 @@ export async function GET() {
         FROM daily_picks
         WHERE confidence IN ('elite', 'high', 'medium')
         GROUP BY confidence
+      `,
+      sql`
+        SELECT date, league, home_team, away_team, pick_team, confidence, edge_score, result
+        FROM daily_picks
+        WHERE result IS NOT NULL
+        ORDER BY date DESC, edge_score DESC
+        LIMIT 100
       `,
     ])
 
@@ -114,6 +121,16 @@ export async function GET() {
           high: tierStats("high"),
           medium: tierStats("medium"),
         },
+        history: (history as any[]).map(p => ({
+          date: p.date,
+          league: p.league,
+          homeTeam: p.home_team,
+          awayTeam: p.away_team,
+          pickTeam: p.pick_team,
+          confidence: p.confidence,
+          edgeScore: p.edge_score,
+          result: p.result,
+        })),
       },
     })
   } catch (err) {
