@@ -19,8 +19,15 @@ interface YesterdayPick {
   awayTeam: string
   pickTeam: string
   recommendation: string
+  confidence: string
   edgeScore: number
   result: "correct" | "incorrect" | "push" | null
+}
+
+interface TierStats {
+  correct: number
+  incorrect: number
+  winRate: number | null
 }
 
 interface PerformanceData {
@@ -41,7 +48,11 @@ interface PerformanceData {
     correct: number
     incorrect: number
     winRate: number | null
-    strongBetWinRate: number | null
+    byConfidence: {
+      elite: TierStats
+      high: TierStats
+      medium: TierStats
+    }
   }
 }
 
@@ -95,31 +106,55 @@ export default function RecordPage() {
         ) : data ? (
           <>
             {/* All-time stats */}
-            <div className="rounded-xl p-4" style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
-              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#4d6080" }}>
-                All-Time Record
-              </p>
-              <div className="grid grid-cols-4 gap-3">
-                <div className="text-center">
-                  <p className="text-2xl font-black text-white">
-                    {data.allTime.correct}-{data.allTime.incorrect}
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
+              <div className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#4d6080" }}>All-Time Record</p>
+                  <p className="text-3xl font-black text-white mt-1">
+                    {data.allTime.correct}–{data.allTime.incorrect}
                   </p>
-                  <p className="text-xs" style={{ color: "#4d6080" }}>W-L</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-black"
-                    style={{ color: data.allTime.winRate !== null && data.allTime.winRate >= 55 ? "#29d87f" : data.allTime.winRate !== null && data.allTime.winRate >= 45 ? "#f5c842" : "#f05b64" }}>
+                <div className="text-right">
+                  <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#4d6080" }}>Win Rate</p>
+                  <p className="text-3xl font-black mt-1"
+                    style={{ color: data.allTime.winRate !== null && data.allTime.winRate >= 55 ? "#29d87f" : data.allTime.winRate !== null && data.allTime.winRate >= 45 ? "#f5c842" : "#8c9bb5" }}>
                     {data.allTime.winRate !== null ? `${data.allTime.winRate}%` : "—"}
                   </p>
-                  <p className="text-xs" style={{ color: "#4d6080" }}>Win Rate</p>
                 </div>
-                <div className="text-center col-span-2">
-                  <p className="text-2xl font-black"
-                    style={{ color: data.allTime.strongBetWinRate !== null && data.allTime.strongBetWinRate >= 55 ? "#f5c842" : "#8c9bb5" }}>
-                    {data.allTime.strongBetWinRate !== null ? `${data.allTime.strongBetWinRate}%` : "—"}
-                  </p>
-                  <p className="text-xs" style={{ color: "#4d6080" }}>Strong Bet Accuracy</p>
-                </div>
+              </div>
+
+              {/* Per-tier breakdown */}
+              <div style={{ borderTop: "1px solid #1e2d40" }}>
+                {[
+                  { key: "elite"  as const, label: "Elite Pick",  color: "#f5c842", bg: "#2a1f00" },
+                  { key: "high"   as const, label: "Strong Bet",  color: "#29d87f", bg: "#0d2e1e" },
+                  { key: "medium" as const, label: "Value Bet",   color: "#4ea8f8", bg: "#0d1e30" },
+                ].map(({ key, label, color, bg }, i) => {
+                  const tier = data.allTime.byConfidence?.[key]
+                  const total = tier ? tier.correct + tier.incorrect : 0
+                  return (
+                    <div key={key} className="flex items-center justify-between px-4 py-3"
+                      style={{ borderTop: i > 0 ? "1px solid #1e2d40" : undefined }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-sm font-semibold" style={{ color }}>{label}</span>
+                      </div>
+                      {total > 0 ? (
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm" style={{ color: "#8c9bb5" }}>
+                            {tier!.correct}–{tier!.incorrect}
+                          </span>
+                          <span className="font-black text-sm px-3 py-1 rounded-lg"
+                            style={{ backgroundColor: bg, color }}>
+                            {tier!.winRate}%
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs" style={{ color: "#4d6080" }}>No history yet</span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -202,6 +237,7 @@ export default function RecordPage() {
                           <p className="font-semibold text-white truncate text-sm">{pick.pickTeam}</p>
                           <p className="text-xs truncate" style={{ color: "#4d6080" }}>
                             {pick.league} · Edge {pick.edgeScore}
+                            {pick.confidence ? ` · ${pick.confidence}` : ""}
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 ml-3">
