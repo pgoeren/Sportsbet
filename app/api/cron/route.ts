@@ -70,7 +70,7 @@ export async function GET(request: Request) {
   // ── Step 2: Record today's picks ────────────────────────────────────────────
   let recorded = 0
   try {
-    const games = await fetchUpcomingGames()
+    const { games } = await fetchUpcomingGames()
     await Promise.all(
       games.map(async (game, i) => {
         const homeSeed = game.home_team.charCodeAt(0) + i * 13

@@ -3,10 +3,11 @@ import axios from "axios"
 const BASE_URL = "https://api.the-odds-api.com/v4"
 const API_KEY = process.env.THE_ODDS_API_KEY
 
-// Cache odds for 30 minutes — odds don't change that fast and quota is limited
-const CACHE_TTL_MS = 30 * 60 * 1000
+// Cache for 4 hours — stretches the 500 req/month free quota significantly
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000
 let cachedGames: Game[] | null = null
 let cacheExpiry = 0
+let quotaExhaustedUntil = 0 // backoff until timestamp when quota is hit
 
 // The Odds API sport keys → our internal labels
 const SPORT_MAP: Record<string, { sport: string; league: string; months: number[] }> = {
@@ -44,17 +45,23 @@ export interface GameOdd {
   point?: number
 }
 
-export async function fetchUpcomingGames(sport?: string): Promise<Game[]> {
+export type OddsApiStatus = "live" | "mock" | "quota_exceeded" | "no_key"
+
+export async function fetchUpcomingGames(sport?: string): Promise<{ games: Game[]; status: OddsApiStatus }> {
   const now = Date.now()
 
   if (!API_KEY) {
-    console.warn("THE_ODDS_API_KEY not set — using demo data")
-    return getMockGames().filter(g => new Date(g.start_date).getTime() > now)
+    return { games: getMockGames().filter(g => new Date(g.start_date).getTime() > now), status: "no_key" }
   }
 
-  // Return cached result if still fresh (saves quota — 3 calls per page load adds up fast)
+  // Quota was hit recently — don't keep hammering the API, wait until reset
+  if (now < quotaExhaustedUntil) {
+    return { games: getMockGames().filter(g => new Date(g.start_date).getTime() > now), status: "quota_exceeded" }
+  }
+
+  // Return cached result if still fresh
   if (!sport && cachedGames && now < cacheExpiry) {
-    return cachedGames.filter(g => new Date(g.start_date).getTime() > now)
+    return { games: cachedGames.filter(g => new Date(g.start_date).getTime() > now), status: "live" }
   }
 
   const sportKeys = sport
@@ -65,24 +72,37 @@ export async function fetchUpcomingGames(sport?: string): Promise<Game[]> {
     sportKeys.map(key => fetchOddsForSport(key))
   )
 
+  // Check if any requests hit quota
+  const quotaHit = results.some(r =>
+    r.status === "rejected" && axios.isAxiosError(r.reason) &&
+    (r.reason.response?.status === 422 || r.reason.response?.status === 401)
+  )
+
+  if (quotaHit) {
+    // Back off until midnight UTC so we don't waste any remaining quota
+    const midnight = new Date()
+    midnight.setUTCHours(24, 0, 0, 0)
+    quotaExhaustedUntil = midnight.getTime()
+    console.warn("Odds API quota exhausted — switching to demo data until midnight UTC")
+    return { games: getMockGames().filter(g => new Date(g.start_date).getTime() > now), status: "quota_exceeded" }
+  }
+
   const games = results
     .filter((r): r is PromiseFulfilledResult<Game[]> => r.status === "fulfilled")
     .flatMap(r => r.value)
     .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
 
-  // If real API returned nothing (quota exceeded, invalid key, no games), fall back to demo data
   if (games.length === 0) {
     console.warn("Odds API returned no games — falling back to demo data")
-    return getMockGames().filter(g => new Date(g.start_date).getTime() > now)
+    return { games: getMockGames().filter(g => new Date(g.start_date).getTime() > now), status: "mock" }
   }
 
-  // Store in cache
   if (!sport) {
     cachedGames = games
     cacheExpiry = now + CACHE_TTL_MS
   }
 
-  return games.filter(g => new Date(g.start_date).getTime() > now)
+  return { games: games.filter(g => new Date(g.start_date).getTime() > now), status: "live" }
 }
 
 async function fetchOddsForSport(sportKey: string): Promise<Game[]> {

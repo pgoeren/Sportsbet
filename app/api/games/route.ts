@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     const hasDb = !!process.env.DATABASE_URL
     if (hasDb) await setupDb().catch(() => {})
 
-    const games = await fetchUpcomingGames(sport)
+    const { games, status: oddsStatus } = await fetchUpcomingGames(sport)
     const today = format(new Date(), "yyyy-MM-dd")
 
     const enriched = await Promise.all(
@@ -138,7 +138,6 @@ export async function GET(request: Request) {
     )
 
     const firstGame = enriched[0]
-    const isMockOdds = enriched.every(g => g.id.startsWith("mock-"))
     const isMockInjuries = firstGame?.injuries?.every((inj: { player: string }) =>
       ["Key Starter", "Star Player", "Backup Guard"].includes(inj.player)
     ) ?? true
@@ -146,7 +145,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       games: enriched,
       _debug: {
-        oddsApi: isMockOdds ? "mock" : "live",
+        oddsApi: oddsStatus,
         tank01: !process.env.TANK01_API_KEY ? "no key" : isMockInjuries ? "mock (fallback)" : "live",
         gamesCount: enriched.length,
       },
