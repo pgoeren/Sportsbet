@@ -79,9 +79,9 @@ function confidenceBg(c: string) {
 }
 
 function betReturn(odds: number | null, result: "correct" | "incorrect" | "push"): { text: string; color: string } {
-  if (result === "push")      return { text: "$5.00 back",  color: "#8c9bb5" }
-  if (result === "incorrect") return { text: "-$5.00",      color: "#f05b64" }
-  if (odds === null)           return { text: "WIN",         color: "#29d87f" }
+  if (result === "push")      return { text: "$5.00 back",       color: "#8c9bb5" }
+  if (result === "incorrect") return { text: "-$5.00",           color: "#f05b64" }
+  if (odds === null)           return { text: "WIN (no odds)",    color: "#29d87f" }
   const profit = odds > 0 ? 5 * (odds / 100) : 5 * (100 / Math.abs(odds))
   return { text: `$5 → $${(5 + profit).toFixed(2)}`, color: "#29d87f" }
 }
