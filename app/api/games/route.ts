@@ -81,6 +81,7 @@ export async function GET(request: Request) {
           currentOdds: homeOdds,
           openingOdds: homeOdds + (i % 2 === 0 ? 10 : -10),
           sport: game.sport,
+          allOdds: game.odds,
         })
 
         const awayEdge = calculateEdge({
@@ -90,6 +91,7 @@ export async function GET(request: Request) {
           currentOdds: awayOdds,
           openingOdds: awayOdds + (i % 2 === 0 ? -10 : 10),
           sport: game.sport,
+          allOdds: game.odds,
         })
 
         const topPick = homeEdge.overallEdge >= awayEdge.overallEdge

@@ -9,11 +9,11 @@ interface EdgeScoreCardProps {
 }
 
 const scoreLabels = [
-  { key: "historicalScore",   label: "Historical" },
+  { key: "analystScore",      label: "Mkt EV"     }, // multi-book consensus EV
   { key: "injuryScore",       label: "Injuries"   },
-  { key: "analystScore",      label: "Market"     },
-  { key: "homeAwayScore",     label: "Home/Away"  },
+  { key: "historicalScore",   label: "Situational"},  // sport-specific spots
   { key: "lineMovementScore", label: "Line Move"  },
+  { key: "homeAwayScore",     label: "Book Split" }, // book price divergence
 ] as const
 
 function scoreColor(score: number) {
