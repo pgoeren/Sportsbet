@@ -39,27 +39,39 @@ export async function GET() {
       ? Math.round((correct / (correct + incorrect)) * 100)
       : null
 
-    // All-time stats
+    // All-time stats — overall + per confidence tier
     const sql = getDb()
-    const allTime = await sql`
-      SELECT
-        COUNT(*) FILTER (WHERE result = 'correct')   AS correct,
-        COUNT(*) FILTER (WHERE result = 'incorrect') AS incorrect,
-        COUNT(*) FILTER (WHERE result IS NULL)       AS pending,
-        COUNT(*) FILTER (WHERE recommendation = 'strong_bet' AND result = 'correct') AS strong_correct,
-        COUNT(*) FILTER (WHERE recommendation = 'strong_bet' AND result = 'incorrect') AS strong_incorrect
-      FROM daily_picks
-    `
+    const [allTime, byTier] = await Promise.all([
+      sql`
+        SELECT
+          COUNT(*) FILTER (WHERE result = 'correct')   AS correct,
+          COUNT(*) FILTER (WHERE result = 'incorrect') AS incorrect,
+          COUNT(*) FILTER (WHERE result IS NULL)       AS pending
+        FROM daily_picks
+      `,
+      sql`
+        SELECT
+          confidence,
+          COUNT(*) FILTER (WHERE result = 'correct')   AS correct,
+          COUNT(*) FILTER (WHERE result = 'incorrect') AS incorrect
+        FROM daily_picks
+        WHERE confidence IN ('elite', 'high', 'medium')
+        GROUP BY confidence
+      `,
+    ])
 
     const at = allTime[0]
     const atTotal = Number(at.correct) + Number(at.incorrect)
     const atWinRate = atTotal > 0
       ? Math.round((Number(at.correct) / atTotal) * 100)
       : null
-    const strongTotal = Number(at.strong_correct) + Number(at.strong_incorrect)
-    const strongWinRate = strongTotal > 0
-      ? Math.round((Number(at.strong_correct) / strongTotal) * 100)
-      : null
+
+    function tierStats(tier: string) {
+      const row = (byTier as any[]).find(r => r.confidence === tier)
+      const w = row ? Number(row.correct) : 0
+      const l = row ? Number(row.incorrect) : 0
+      return { correct: w, incorrect: l, winRate: (w + l) > 0 ? Math.round((w / (w + l)) * 100) : null }
+    }
 
     return NextResponse.json({
       yesterday: {
@@ -74,6 +86,7 @@ export async function GET() {
           awayTeam: p.away_team,
           pickTeam: p.pick_team,
           recommendation: p.recommendation,
+          confidence: p.confidence,
           edgeScore: p.edge_score,
           result: p.result,
         })),
@@ -96,7 +109,11 @@ export async function GET() {
         correct: Number(at.correct),
         incorrect: Number(at.incorrect),
         winRate: atWinRate,
-        strongBetWinRate: strongWinRate,
+        byConfidence: {
+          elite: tierStats("elite"),
+          high: tierStats("high"),
+          medium: tierStats("medium"),
+        },
       },
     })
   } catch (err) {

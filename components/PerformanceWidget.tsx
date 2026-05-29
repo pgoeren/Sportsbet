@@ -2,6 +2,12 @@
 import { useState, useEffect } from "react"
 import { CheckCircle, XCircle, Clock, TrendingUp, ChevronDown, ChevronUp } from "lucide-react"
 
+interface TierStats {
+  correct: number
+  incorrect: number
+  winRate: number | null
+}
+
 interface PerformanceData {
   yesterday: {
     date: string
@@ -15,6 +21,7 @@ interface PerformanceData {
       awayTeam: string
       pickTeam: string
       recommendation: string
+      confidence: string
       edgeScore: number
       result: string | null
     }[]
@@ -24,7 +31,11 @@ interface PerformanceData {
     correct: number
     incorrect: number
     winRate: number | null
-    strongBetWinRate: number | null
+    byConfidence: {
+      elite: TierStats
+      high: TierStats
+      medium: TierStats
+    }
   }
 }
 
@@ -95,49 +106,97 @@ export function PerformanceWidget() {
         </div>
       </button>
 
-      {expanded && yesterday.picks.length > 0 && (
-        <div className="px-4 pb-4 space-y-2 pt-3" style={{ borderTop: "1px solid #1e2d40" }}>
-          {allTime.strongBetWinRate !== null && (
-            <div className="flex items-center justify-between text-xs mb-3 p-2 rounded-lg"
-              style={{ backgroundColor: "#2a1f00", border: "1px solid #f5c842" }}>
-              <span className="font-medium" style={{ color: "#f5c842" }}>Strong Bet accuracy</span>
-              <span className="font-bold" style={{ color: "#f5c842" }}>{allTime.strongBetWinRate}%</span>
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3 pt-3" style={{ borderTop: "1px solid #1e2d40" }}>
+
+          {/* All-time by confidence tier */}
+          {allTime.byConfidence && (
+            <div className="rounded-lg overflow-hidden" style={{ border: "1px solid #263044" }}>
+              <div className="px-3 py-2" style={{ backgroundColor: "#0f1923" }}>
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#8c9bb5" }}>
+                  All-Time by Pick Tier
+                </p>
+              </div>
+              {[
+                { key: "elite" as const, label: "Elite Pick", color: "#f5c842", bg: "#2a1f00" },
+                { key: "high"  as const, label: "Strong Bet", color: "#29d87f", bg: "#0d2e1e" },
+                { key: "medium"as const, label: "Value Bet",  color: "#4ea8f8", bg: "#0d1e30" },
+              ].map(({ key, label, color, bg }) => {
+                const tier = allTime.byConfidence[key]
+                const total = tier.correct + tier.incorrect
+                return (
+                  <div key={key} className="flex items-center justify-between px-3 py-2.5"
+                    style={{ borderTop: "1px solid #1e2d40" }}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                      <span className="text-xs font-semibold" style={{ color }}>{label}</span>
+                    </div>
+                    {total > 0 ? (
+                      <div className="flex items-center gap-3 text-xs">
+                        <span style={{ color: "#8c9bb5" }}>
+                          {tier.correct}–{tier.incorrect}
+                        </span>
+                        <span className="font-black text-sm px-2 py-0.5 rounded"
+                          style={{ backgroundColor: bg, color }}>
+                          {tier.winRate}%
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs" style={{ color: "#4d6080" }}>No history yet</span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
-          {yesterday.picks.map((pick, i) => (
-            <div key={i} className="flex items-center justify-between text-xs py-1.5 last:border-0"
-              style={{ borderBottom: "1px solid #1e2d40" }}>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{pick.pickTeam}</p>
-                <p className="truncate" style={{ color: "#4d6080" }}>{pick.league} • Edge {pick.edgeScore}</p>
+
+          {/* Yesterday's individual picks */}
+          {yesterday.picks.length > 0 && (
+            <div className="space-y-0 rounded-lg overflow-hidden" style={{ border: "1px solid #263044" }}>
+              <div className="px-3 py-2" style={{ backgroundColor: "#0f1923" }}>
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#8c9bb5" }}>
+                  Yesterday&apos;s Picks
+                </p>
               </div>
-              <div className="flex items-center gap-1.5 ml-2">
-                {pick.result === "correct" && (
-                  <>
-                    <CheckCircle className="w-4 h-4" style={{ color: "#29d87f" }} />
-                    <span className="font-bold" style={{ color: "#29d87f" }}>WIN</span>
-                  </>
-                )}
-                {pick.result === "incorrect" && (
-                  <>
-                    <XCircle className="w-4 h-4" style={{ color: "#f05b64" }} />
-                    <span className="font-bold" style={{ color: "#f05b64" }}>LOSS</span>
-                  </>
-                )}
-                {pick.result === "push" && <span style={{ color: "#8c9bb5" }}>PUSH</span>}
-                {!pick.result && (
-                  <>
-                    <Clock className="w-4 h-4" style={{ color: "#4d6080" }} />
-                    <span style={{ color: "#4d6080" }}>TBD</span>
-                  </>
-                )}
-              </div>
+              {yesterday.picks.map((pick, i) => (
+                <div key={i} className="flex items-center justify-between text-xs px-3 py-2.5"
+                  style={{ borderTop: "1px solid #1e2d40" }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium truncate">{pick.pickTeam}</p>
+                    <p className="truncate" style={{ color: "#4d6080" }}>
+                      {pick.league} · Edge {pick.edgeScore}
+                      {pick.confidence && ` · ${pick.confidence}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-2">
+                    {pick.result === "correct" && (
+                      <>
+                        <CheckCircle className="w-4 h-4" style={{ color: "#29d87f" }} />
+                        <span className="font-bold" style={{ color: "#29d87f" }}>WIN</span>
+                      </>
+                    )}
+                    {pick.result === "incorrect" && (
+                      <>
+                        <XCircle className="w-4 h-4" style={{ color: "#f05b64" }} />
+                        <span className="font-bold" style={{ color: "#f05b64" }}>LOSS</span>
+                      </>
+                    )}
+                    {pick.result === "push" && <span style={{ color: "#8c9bb5" }}>PUSH</span>}
+                    {!pick.result && (
+                      <>
+                        <Clock className="w-4 h-4" style={{ color: "#4d6080" }} />
+                        <span style={{ color: "#4d6080" }}>TBD</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {yesterday.pending > 0 && (
+                <p className="text-xs text-center py-2" style={{ color: "#4d6080", borderTop: "1px solid #1e2d40" }}>
+                  {yesterday.pending} game{yesterday.pending > 1 ? "s" : ""} still awaiting results
+                </p>
+              )}
             </div>
-          ))}
-          {yesterday.pending > 0 && (
-            <p className="text-xs text-center pt-1" style={{ color: "#4d6080" }}>
-              {yesterday.pending} game{yesterday.pending > 1 ? "s" : ""} still awaiting results
-            </p>
           )}
         </div>
       )}
