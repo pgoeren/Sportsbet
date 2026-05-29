@@ -98,6 +98,7 @@ export async function GET(request: Request) {
 
         // Persist picks to DB for performance tracking (non-fatal if DB unavailable)
         if (hasDb && topPick.recommendation !== "pass") {
+          const pickOdds = topPick.team === game.home_team ? homeOdds : awayOdds
           await savePick({
             id: `${today}-${game.id}`,
             date: today,
@@ -110,6 +111,7 @@ export async function GET(request: Request) {
             recommendation: topPick.recommendation,
             edgeScore: topPick.overallEdge,
             confidence: topPick.confidence,
+            odds: pickOdds,
             gameTime: game.start_date,
           }).catch(() => {})
         }

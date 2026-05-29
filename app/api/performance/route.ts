@@ -59,7 +59,7 @@ export async function GET() {
         GROUP BY confidence
       `,
       sql`
-        SELECT date, league, home_team, away_team, pick_team, confidence, edge_score, result
+        SELECT date, league, home_team, away_team, pick_team, confidence, edge_score, odds, result
         FROM daily_picks
         WHERE result IS NOT NULL
         ORDER BY date DESC, edge_score DESC
@@ -129,6 +129,7 @@ export async function GET() {
           pickTeam: p.pick_team,
           confidence: p.confidence,
           edgeScore: p.edge_score,
+          odds: p.odds ? Number(p.odds) : null,
           result: p.result,
         })),
       },

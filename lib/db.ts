@@ -22,6 +22,7 @@ export async function setupDb() {
       recommendation TEXT NOT NULL,
       edge_score  INTEGER NOT NULL,
       confidence  TEXT NOT NULL,
+      odds        INTEGER,
       game_time   TIMESTAMPTZ NOT NULL,
       result      TEXT,
       created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -30,6 +31,10 @@ export async function setupDb() {
   await sql`
     CREATE INDEX IF NOT EXISTS daily_picks_date_idx ON daily_picks(date)
   `
+  // Add odds column if upgrading from older schema
+  await sql`
+    ALTER TABLE daily_picks ADD COLUMN IF NOT EXISTS odds INTEGER
+  `.catch(() => {})
 }
 
 export async function savePick(pick: {
@@ -44,17 +49,18 @@ export async function savePick(pick: {
   recommendation: string
   edgeScore: number
   confidence: string
+  odds?: number
   gameTime: string
 }) {
   try {
     const sql = getDb()
     await sql`
       INSERT INTO daily_picks
-        (id, date, game_id, sport, league, home_team, away_team, pick_team, recommendation, edge_score, confidence, game_time)
+        (id, date, game_id, sport, league, home_team, away_team, pick_team, recommendation, edge_score, confidence, odds, game_time)
       VALUES
         (${pick.id}, ${pick.date}, ${pick.gameId}, ${pick.sport}, ${pick.league},
          ${pick.homeTeam}, ${pick.awayTeam}, ${pick.pickTeam}, ${pick.recommendation},
-         ${pick.edgeScore}, ${pick.confidence}, ${pick.gameTime})
+         ${pick.edgeScore}, ${pick.confidence}, ${pick.odds ?? null}, ${pick.gameTime})
       ON CONFLICT (id) DO NOTHING
     `
   } catch {
