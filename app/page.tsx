@@ -70,31 +70,87 @@ function toAmerican(decimal: number) {
 
 // ─── PickCard ─────────────────────────────────────────────────────────────────
 
+function TeamRow({
+  team, league, mlPrice, spreadPoint, spreadPrice, isPick, accentColor, accentBg,
+}: {
+  team: string; league: string; mlPrice?: number; spreadPoint?: number; spreadPrice?: number
+  isPick: boolean; accentColor: string; accentBg: string
+}) {
+  const logo = getTeamLogoUrl(team, league)
+  const spreadLine = spreadPoint !== undefined
+    ? (spreadPoint > 0 ? `+${spreadPoint}` : `${spreadPoint}`)
+    : undefined
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3"
+      style={{ backgroundColor: isPick ? accentBg : "transparent" }}>
+      {/* Logo */}
+      <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+        {logo ? (
+          <img src={logo} alt={team} width={36} height={36}
+            className="object-contain"
+            onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
+        ) : (
+          <div className="w-9 h-9 rounded-full" style={{ backgroundColor: "#263044" }} />
+        )}
+      </div>
+
+      {/* Name */}
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-sm truncate" style={{ color: isPick ? "#ffffff" : "#8c9bb5" }}>
+          {team}
+        </p>
+        {isPick && spreadLine && (
+          <p className="text-xs" style={{ color: accentColor }}>
+            Alt: {spreadLine} ({spreadPrice !== undefined ? formatOdds(spreadPrice) : "—"})
+          </p>
+        )}
+      </div>
+
+      {/* ML odds pill — highlighted for the pick */}
+      <div className="flex-shrink-0 min-w-[60px] text-center px-3 py-2 rounded-lg"
+        style={{
+          backgroundColor: isPick ? accentColor : "#243044",
+          border: isPick ? "none" : "1px solid #2d3f55",
+        }}>
+        <p className="text-xs font-semibold leading-none mb-0.5"
+          style={{ color: isPick ? "#0f1923" : "#4d6080" }}>ML</p>
+        <p className="font-black text-sm leading-none"
+          style={{ color: isPick ? "#0f1923" : "#ffffff" }}>
+          {mlPrice !== undefined ? formatOdds(mlPrice) : "—"}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function PickCard({ game }: { game: GameData }) {
   const pick = game.topPick
   const [showAnalysis, setShowAnalysis] = useState(false)
 
-  const mlEntry  = getOdds(game, pick.team, "moneyline")
-  const spreadEntry = getOdds(game, pick.team, "spreads")
   const accentColor = pick.confidence === "elite" ? "#f5c842"
     : pick.confidence === "high" ? "#29d87f"
     : "#4ea8f8"
-  const accentBg = pick.confidence === "elite" ? "#2a1f00"
-    : pick.confidence === "high" ? "#0d2e1e"
-    : "#0d1e30"
-  const opposingTeam = pick.team === game.home_team ? game.away_team : game.home_team
-  const isHome = pick.team === game.home_team
+  const accentBg = pick.confidence === "elite" ? "rgba(245,200,66,0.08)"
+    : pick.confidence === "high" ? "rgba(41,216,127,0.08)"
+    : "rgba(78,168,248,0.08)"
 
-  // Recommend spread when ML is heavy favorite — better value
-  const useSpreakAsPrimary = mlEntry !== undefined && mlEntry.price < -185 && spreadEntry !== undefined
+  const awayML     = getOdds(game, game.away_team, "moneyline")?.price
+  const homeML     = getOdds(game, game.home_team, "moneyline")?.price
+  const awaySpread = getOdds(game, game.away_team, "spreads")
+  const homeSpread = getOdds(game, game.home_team, "spreads")
+  const pickSpread = pick.team === game.away_team ? awaySpread : homeSpread
 
   const consensus = game.marketConsensus?.find(c => c.pick === pick.team)
+  const badgeLabel = pick.confidence === "elite" ? "ELITE PICK"
+    : pick.confidence === "high" ? "STRONG BET"
+    : "VALUE BET"
 
   return (
     <div className="rounded-xl overflow-hidden"
-      style={{ backgroundColor: "#1a2535", border: `1px solid ${accentColor}` }}>
+      style={{ backgroundColor: "#1a2535", border: "1px solid #263044" }}>
 
-      {/* Accent top bar */}
+      {/* Confidence stripe */}
       <div style={{ height: "3px", backgroundColor: accentColor }} />
 
       {/* Header */}
@@ -103,101 +159,71 @@ function PickCard({ game }: { game: GameData }) {
           <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#8c9bb5" }}>
             {game.league}
           </span>
+          <span className="text-xs" style={{ color: "#4d6080" }}>·</span>
           <span className="text-xs" style={{ color: "#4d6080" }}>
             {format(new Date(game.start_date), "h:mm a")}
           </span>
         </div>
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold"
-          style={{ backgroundColor: accentBg, color: accentColor, border: `1px solid ${accentColor}` }}>
+          style={{ backgroundColor: accentBg, color: accentColor, border: `1px solid ${accentColor}33` }}>
           <Zap className="w-3 h-3" />
-          {pick.confidence === "elite" ? "ELITE PICK" : pick.confidence === "high" ? "STRONG BET" : "VALUE BET"}
+          {badgeLabel}
         </div>
       </div>
 
-      {/* Main pick */}
-      <div className="px-4 pb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            {(() => {
-              const logo = getTeamLogoUrl(pick.team, game.league)
-              return logo ? (
-                <img src={logo} alt={pick.team} width={44} height={44}
-                  className="rounded-full flex-shrink-0 object-contain"
-                  style={{ backgroundColor: "#0f1923", padding: "2px" }}
-                  onError={e => { (e.target as HTMLImageElement).style.display = "none" }} />
-              ) : null
-            })()}
-            <div className="min-w-0">
-              <p className="font-black text-white text-xl leading-tight truncate">{pick.team}</p>
-              <p className="text-sm mt-0.5" style={{ color: "#8c9bb5" }}>
-                {isHome ? "Home" : "Away"} · vs {opposingTeam}
-              </p>
-            </div>
-          </div>
+      {/* Divider */}
+      <div style={{ height: "1px", backgroundColor: "#1e2d40" }} />
 
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            {useSpreakAsPrimary && spreadEntry ? (
-              <>
-                <div className="px-3 py-2 rounded-lg text-right"
-                  style={{ backgroundColor: accentBg, border: `1px solid ${accentColor}` }}>
-                  <p className="text-xs font-semibold" style={{ color: accentColor }}>
-                    SPREAD {spreadEntry.point !== undefined ? (spreadEntry.point > 0 ? `+${spreadEntry.point}` : spreadEntry.point) : ""}
-                  </p>
-                  <p className="font-black text-xl leading-tight" style={{ color: accentColor }}>
-                    {formatOdds(spreadEntry.price)}
-                  </p>
-                </div>
-                {mlEntry && (
-                  <p className="text-xs" style={{ color: "#4d6080" }}>ML {formatOdds(mlEntry.price)}</p>
-                )}
-              </>
-            ) : mlEntry ? (
-              <>
-                <div className="px-3 py-2 rounded-lg text-right"
-                  style={{ backgroundColor: accentBg, border: `1px solid ${accentColor}` }}>
-                  <p className="text-xs font-semibold" style={{ color: accentColor }}>MONEYLINE</p>
-                  <p className="font-black text-xl leading-tight" style={{ color: accentColor }}>
-                    {formatOdds(mlEntry.price)}
-                  </p>
-                </div>
-                {spreadEntry && (
-                  <p className="text-xs" style={{ color: "#4d6080" }}>
-                    Spread {spreadEntry.point !== undefined ? (spreadEntry.point > 0 ? `+${spreadEntry.point}` : spreadEntry.point) : ""} ({formatOdds(spreadEntry.price)})
-                  </p>
-                )}
-              </>
-            ) : null}
-          </div>
-        </div>
+      {/* Away row */}
+      <TeamRow
+        team={game.away_team} league={game.league}
+        mlPrice={awayML}
+        spreadPoint={awaySpread?.point} spreadPrice={awaySpread?.price}
+        isPick={pick.team === game.away_team}
+        accentColor={accentColor} accentBg={accentBg}
+      />
 
-        {/* Edge + reasoning */}
-        <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: "1px solid #1e2d40" }}>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold" style={{ color: accentColor }}>
-              Edge {pick.overallEdge}
+      {/* Divider */}
+      <div style={{ height: "1px", backgroundColor: "#1e2d40", marginLeft: "56px" }} />
+
+      {/* Home row */}
+      <TeamRow
+        team={game.home_team} league={game.league}
+        mlPrice={homeML}
+        spreadPoint={homeSpread?.point} spreadPrice={homeSpread?.price}
+        isPick={pick.team === game.home_team}
+        accentColor={accentColor} accentBg={accentBg}
+      />
+
+      {/* Divider */}
+      <div style={{ height: "1px", backgroundColor: "#1e2d40" }} />
+
+      {/* Model reasoning strip */}
+      <div className="px-4 py-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold" style={{ color: accentColor }}>
+            Edge {pick.overallEdge}
+          </span>
+          {consensus && (
+            <span className="text-xs" style={{ color: "#4d6080" }}>
+              · {Math.round(consensus.impliedProb * 100)}% market implied
             </span>
-            {consensus && (
-              <>
-                <span style={{ color: "#4d6080" }}>·</span>
-                <span className="text-xs" style={{ color: "#8c9bb5" }}>
-                  {Math.round(consensus.impliedProb * 100)}% market consensus
-                </span>
-              </>
-            )}
-          </div>
-          {pick.reasoning?.slice(0, 2).map((r, i) => (
-            <p key={i} className="text-xs flex items-start gap-1.5" style={{ color: "#8c9bb5" }}>
-              <span style={{ color: accentColor, flexShrink: 0, marginTop: "1px" }}>•</span>
-              {r}
-            </p>
-          ))}
+          )}
+          {pickSpread && (
+            <span className="text-xs" style={{ color: "#4d6080" }}>
+              · Spread {pickSpread.point !== undefined ? (pickSpread.point > 0 ? `+${pickSpread.point}` : pickSpread.point) : ""} ({formatOdds(pickSpread.price)})
+            </span>
+          )}
         </div>
+        {pick.reasoning?.[0] && (
+          <p className="text-xs mt-1" style={{ color: "#8c9bb5" }}>{pick.reasoning[0]}</p>
+        )}
       </div>
 
       {/* Footer */}
       <div className="flex items-center px-4 py-2 border-t" style={{ borderColor: "#1e2d40", backgroundColor: "#0d1421" }}>
         <span className="text-xs" style={{ color: "#4d6080" }}>
-          Model auto-tracking · see Record tab for results
+          Model auto-tracking · see Record tab
         </span>
         <button onClick={() => setShowAnalysis(!showAnalysis)}
           className="ml-auto flex items-center gap-1 text-xs font-semibold"
