@@ -161,25 +161,29 @@ function getMockGames(): Game[] {
       ],
     },
     {
+      // 7:15 PM ET: Chicago Cubs @ St. Louis Cardinals
       id: "mock-2", sport: "baseball", league: "MLB",
-      home_team: "Chicago Cubs", away_team: "Atlanta Braves", start_date: h(5),
+      home_team: "St. Louis Cardinals", away_team: "Chicago Cubs", start_date: h(2),
       odds: [
-        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Chicago Cubs",   price: 105  },
-        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Atlanta Braves", price: -125 },
-        { sportsbook: "FanDuel",    market_name: "totals",    team_name: "Over",           price: -110, point: 8.0 },
-        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Chicago Cubs",   price: 108  },
-        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Atlanta Braves", price: -128 },
+        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "St. Louis Cardinals", price: -118 },
+        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Chicago Cubs",         price: -102 },
+        { sportsbook: "FanDuel",    market_name: "totals",    team_name: "Over",                 price: -110, point: 8.5 },
+        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "St. Louis Cardinals", price: -115 },
+        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Chicago Cubs",         price: -105 },
       ],
     },
     {
+      // 10:15 PM ET: Philadelphia Phillies @ Los Angeles Dodgers
       id: "mock-3", sport: "baseball", league: "MLB",
-      home_team: "New York Yankees", away_team: "Los Angeles Dodgers", start_date: h(6),
+      home_team: "Los Angeles Dodgers", away_team: "Philadelphia Phillies", start_date: h(5),
       odds: [
-        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "New York Yankees",    price: 115  },
-        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Los Angeles Dodgers", price: -135 },
-        { sportsbook: "FanDuel",    market_name: "totals",    team_name: "Over",                price: -110, point: 8.5 },
-        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "New York Yankees",    price: 112  },
-        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Los Angeles Dodgers", price: -132 },
+        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Los Angeles Dodgers",   price: -148 },
+        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Philadelphia Phillies", price: 125  },
+        { sportsbook: "FanDuel",    market_name: "totals",    team_name: "Over",                  price: -110, point: 8.0 },
+        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Los Angeles Dodgers",   price: -145 },
+        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Philadelphia Phillies", price: 122  },
+        { sportsbook: "BetMGM",     market_name: "moneyline", team_name: "Los Angeles Dodgers",   price: -150 },
+        { sportsbook: "BetMGM",     market_name: "moneyline", team_name: "Philadelphia Phillies", price: 126  },
       ],
     },
     {
@@ -197,14 +201,15 @@ function getMockGames(): Game[] {
       ],
     },
     {
+      // 8:10 PM ET: Milwaukee Brewers @ Houston Astros
       id: "mock-5", sport: "baseball", league: "MLB",
-      home_team: "Houston Astros", away_team: "Seattle Mariners", start_date: h(7),
+      home_team: "Houston Astros", away_team: "Milwaukee Brewers", start_date: h(3),
       odds: [
-        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Houston Astros",   price: -142 },
-        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Seattle Mariners", price: 120  },
-        { sportsbook: "FanDuel",    market_name: "totals",    team_name: "Over",             price: -110, point: 7.5 },
-        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Houston Astros",   price: -138 },
-        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Seattle Mariners", price: 116  },
+        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Houston Astros",    price: -130 },
+        { sportsbook: "FanDuel",    market_name: "moneyline", team_name: "Milwaukee Brewers", price: 110  },
+        { sportsbook: "FanDuel",    market_name: "totals",    team_name: "Over",              price: -110, point: 8.0 },
+        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Houston Astros",    price: -128 },
+        { sportsbook: "DraftKings", market_name: "moneyline", team_name: "Milwaukee Brewers", price: 108  },
       ],
     },
   ]
