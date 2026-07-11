@@ -1,14 +1,14 @@
 {
-  "name": "BetEdge - Smart Sports Betting",
-  "short_name": "BetEdge",
-  "description": "AI-powered sports betting recommendations with edge analysis",
+  "name": "Dinner Tonight - Gluten-Free Recipe Feed",
+  "short_name": "Dinner Tonight",
+  "description": "A gluten-free dinner feed that helps you decide what's for dinner tonight.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#030712",
-  "theme_color": "#030712",
+  "background_color": "#191510",
+  "theme_color": "#191510",
   "orientation": "portrait-primary",
-  "categories": ["sports", "finance"],
+  "categories": ["food", "lifestyle"],
   "lang": "en",
   "icons": [
     {
@@ -32,14 +32,14 @@
   ],
   "shortcuts": [
     {
-      "name": "Today's Picks",
-      "url": "/picks",
-      "description": "View today's top picks"
+      "name": "Tonight's Dinner",
+      "url": "/",
+      "description": "See tonight's gluten-free dinner pick"
     },
     {
-      "name": "Bet Tracker",
-      "url": "/tracker",
-      "description": "Track your bets"
+      "name": "Recipe Feed",
+      "url": "/feed",
+      "description": "Browse the full recipe feed"
     }
   ]
 }

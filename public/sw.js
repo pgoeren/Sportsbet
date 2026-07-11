@@ -1,5 +1,5 @@
-const CACHE = "betedge-v1"
-const PRECACHE = ["/", "/picks", "/tracker", "/analytics", "/manifest.json"]
+const CACHE = "dinner-tonight-v1"
+const PRECACHE = ["/", "/feed", "/manifest.json"]
 
 self.addEventListener("install", e => {
   e.waitUntil(

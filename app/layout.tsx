@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/BottomNav"
 const inter = Inter({ subsets: ["latin"] })
 
 export const viewport: Viewport = {
-  themeColor: "#030712",
+  themeColor: "#191510",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -15,13 +15,13 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "BetEdge",
-  description: "Smart sports betting recommendations with edge analysis",
+  title: "Dinner Tonight",
+  description: "A gluten-free dinner feed that helps you decide what's for dinner tonight.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "BetEdge",
+    title: "Dinner Tonight",
     startupImage: "/apple-touch-icon.png",
   },
   icons: {
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-950 text-white min-h-screen`}>
+      <body className={`${inter.className} bg-fd-bg text-fd-text min-h-screen`}>
         <main className="max-w-lg mx-auto pb-24 min-h-screen">
           {children}
         </main>
